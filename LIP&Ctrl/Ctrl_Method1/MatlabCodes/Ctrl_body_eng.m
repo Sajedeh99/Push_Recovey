@@ -222,41 +222,14 @@ plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold
 plot(CoMx(1,:),CoMx(2,:),'color','m');hold on;
 plot(UT_x(1,:),UT_x(2,:),'color','b');hold on;
 plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);%ylim([-10,30])
-% plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
+plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
 figure(2)
 plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
 plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
-% plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
-% for ith = 1:N+2
-%     indx =  int32((Tnom*(ith-1)/t_sample));
-%     for t_loc = 0:t_sample:Tnom - t_sample
-%         indx = indx + 1;
-%         xi_d(indx,:) = r_vrp(ith,:) + exp(omega*(t_loc-Tnom))*(r_vrp(ith+1,:) + b_nom(ith,:) - r_vrp(ith,:));
-%     end
-% end
-% CoM trajectory
-% x_com(1,:) = [0, 0, delta_z_vrp];
-% com_dot = [0, 0, 0];
-% for i = 2:length(xi_d)
-%     x_com(i,:) = x_com(i-1,:) - t_sample*omega*(x_com(i-1,:) - xi_d(i-1,:));
-%     com_dot(i, :) = (omega) * (xi_d(i,:) - x_com(i,:)); %  (omega^2) was wrong
-% end
-%plot trajectories
-% figure
-% scatter3(r_vrp(:,1), r_vrp(:,2), r_vrp(:,3),50,'c','d',"filled")
-% hold on
-% scatter3(xi_eos(:,1), xi_eos(:,2), xi_eos(:,3),50,'r','s',"filled")
-% plot3(xi_d(:,1), xi_d(:,2), xi_d(:,3),'b','LineWidth', 1.5)
-% % plot3(x_com(:,1), x_com(:,2), x_com(:,3),'g','LineWidth', 1.5)
-% 
-% xlabel('\bf \it \xi_{d,x}')
-% ylabel('\bf \it \xi_{d,y}')
-% zlabel('\bf \it \xi_{d,z}')
-% title('Walking Trajectory generation')
-% grid on
+plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
 
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
