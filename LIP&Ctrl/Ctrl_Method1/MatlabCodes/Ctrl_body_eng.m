@@ -96,9 +96,7 @@ while Step(i) == 1
     % update pattern parameter
     for j = n:N+1
        r_vrp(j+2,1) = r_vrp(j+2,1) + qpresult(1);
-%        b_nom(j+1,1) = b_nom(j+1,1) + qpresult(2);
        r_vrp(j+2,2) = r_vrp(j+2,2) + qpresult(3);
-%        b_nom(j+1,2) = b_nom(j+1,2) + qpresult(4);
     end
     
     % regenerate DCM pattern 
@@ -217,19 +215,21 @@ while Step(i) == 1
 end
 %% plot result
 figure(1)
-plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g');hold on;
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
+plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g');hold on;
 plot(CoMx(1,:),CoMx(2,:),'color','m');hold on;
 plot(UT_x(1,:),UT_x(2,:),'color','b');hold on;
-plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);%ylim([-10,30])
+plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);
 plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
+legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','P_{cZMP,x}')
 figure(2)
-plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
+plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
 plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
 plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
+legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','P_{cZMP,y}')
 
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
