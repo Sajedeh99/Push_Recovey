@@ -17,7 +17,7 @@ g = 9.8;
 delta_z_vrp = 0.8;
 omega = sqrt(g/delta_z_vrp);
 
-[Tnom,Lnom,Wnom,tau_nom] = Param_fcn2(L_min0, L_max0, W_min0, W_max0, T_min, T_max, omega, Vx, Vy);
+[Tnom,Lnom,Wnom,tau_nom] = Param_fcn(L_min0, L_max0, W_min0, W_max0, T_min, T_max, omega, Vx, Vy);
 global t_sample
 t_sample = 0.001;
 
