@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 3;
+N = 5;
 is_left = false;
 
 global t_sample
@@ -173,7 +173,6 @@ indx = 0;
         CoM.y(:,k+indx+1) = A*CoM.y(:,k+indx) + B*u_ref(k+indx,2);
     end
 indx = int32(t_ini/t_sample); 
-    
 %% control loop
 while Step(i) == 1
     q = q+1;
@@ -190,7 +189,7 @@ while Step(i) == 1
         inc(s) = floor(T/t_sample) - int32(Tnom/t_sample);
         ini(ith+1:end) = ini_org(ith+1:end) + inc(s).*ones(1,N+4-ith);
         fnl(ith:end) = fnl_org(ith:end) + inc(s).*ones(1,N+4-ith);
-        p_ref(int32(t_ini/t_sample)+ini(ith):int32(t_ini/t_sample)+fnl(ith),:) = r_vrp(ith,:).*ones(fnl(ith)-ini(ith)+1,1);
+        p_ref(indx+ini(ith):indx+fnl(ith),:) = r_vrp(ith,:).*ones(fnl(ith)-ini(ith)+1,1);
     end
     
     %% CoM generation
@@ -301,7 +300,8 @@ while Step(i) == 1
     
     t = t + t_sample;
     
-    [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
+%     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
+    fnl(end)
     [n T t]
     
     % going next step
@@ -333,7 +333,7 @@ while Step(i) == 1
 end
 
 %% plot result
-t_sim = t_sample:t_sample:length(p_ref)*t_sample;
+t_sim = t_sample:t_sample:(fnl(end)+t_ini/t_sample)*t_sample;
 figure(1)
 plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g');hold on;
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
@@ -341,7 +341,7 @@ plot(CoMx(1,:),CoMx(2,:),'color','m');hold on;
 plot(UT_x(1,:),UT_x(2,:),'color','b');hold on;
 plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
 figure(3)
-plot(t_sim,p_ref(:,1),'color','r','LineStyle',':','linewidth',2);hold on;
+plot(t_sim,p_ref(1:fnl(end)+indx,1),'color','r','LineStyle',':','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)+1),CoM.x(1,:),'color','m','LineStyle',':','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)),DCM.x(1,:),'color','k','LineStyle',':','linewidth',2);hold on;
 % plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
@@ -352,7 +352,7 @@ plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);hold on;
 figure(4)
-plot(t_sim,p_ref(:,2),'color','r','LineStyle',':','linewidth',2);hold on;
+plot(t_sim,p_ref(1:fnl(end)+indx,2),'color','r','LineStyle',':','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)+1),CoM.y(1,:),'color','m','LineStyle',':','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)),DCM.y(1,:),'color','k','LineStyle',':','linewidth',2);hold on;
 % plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
