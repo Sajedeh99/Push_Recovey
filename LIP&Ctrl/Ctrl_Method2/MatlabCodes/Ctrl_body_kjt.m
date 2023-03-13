@@ -345,6 +345,17 @@ plot(t_sim,p_ref(1:fnl(end)+indx,1),'color','r','LineStyle',':','linewidth',2);h
 plot(t_sim(1:end-int32(t_fnl/t_sample)+1),CoM.x(1,:),'color','m','LineStyle',':','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)),DCM.x(1,:),'color','k','LineStyle',':','linewidth',2);hold on;
 % plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
+figure(2)
+plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
+plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
+plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
+plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);hold on;
+figure(4)
+plot(t_sim,p_ref(1:fnl(end)+indx,2),'color','r','LineStyle',':','linewidth',2);hold on;
+plot(t_sim(1:end-int32(t_fnl/t_sample)+1),CoM.y(1,:),'color','m','LineStyle',':','linewidth',2);hold on;
+plot(t_sim(1:end-int32(t_fnl/t_sample)),DCM.y(1,:),'color','k','LineStyle',':','linewidth',2);hold on;
+% plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
 
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
