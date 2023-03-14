@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 5;
+N = 1;
 is_left = false;
 
 global t_sample
@@ -80,13 +80,6 @@ for n_ = 1:3
     end
 end
 %% initial values
-% Sup leg initial pos
-u0 = [0 Lp/2]';
-u0x = u0(1);
-u0y = u0(2);
-% IP initial pos & vel
-x0 = [xi_ini(1,1) xi_ini(1,2)]';
-V0 = [0 0]';
 % sup leg pos array
 U0_x = [];
 U0_y = [];
@@ -172,7 +165,17 @@ indx = 0;
         CoM.x(:,k+indx+1) = A*CoM.x(:,k+indx) + B*u_ref(k+indx,1);
         CoM.y(:,k+indx+1) = A*CoM.y(:,k+indx) + B*u_ref(k+indx,2);
     end
-indx = int32(t_ini/t_sample); 
+indx = int32(t_ini/t_sample);   
+% Sup leg initial pos
+u0 = [0 Lp/2]';
+u0x = u0(1);
+u0y = u0(2);
+% IP initial pos & vel
+x0 = [CoM.x(1,indx) CoM.y(1,indx)]';
+V0 = [CoM.x(2,indx) CoM.y(2,indx)]';
+% x0 = [xi_ini(1,1) xi_ini(1,2)]';
+% V0 = [0 0]';
+
 %% control loop
 while Step(i) == 1
     q = q+1;
@@ -215,8 +218,8 @@ while Step(i) == 1
     CoM.y(:,m+indx+1) = A*CoM.y(:,m+indx) + B*u_ref(m+indx,2);
    %%
     % regenerate DCM pattern 
-    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
-    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
+%     xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
+%     xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
     
     % simulate IP with initial value (u0, x0, v0) of ith Step
     if q == 1
@@ -237,35 +240,43 @@ while Step(i) == 1
     ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
     ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
     % reference dcm
-    xi_ref_X = [time xi_X]';
-    xi_ref_Y = [time xi_Y]';
+%     xi_ref_X = [time xi_X]';
+%     xi_ref_Y = [time xi_Y]';
+%     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
+%     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
+    xi_ref_X = [time DCM.x(m+indx)]';
+    xi_ref_Y = [time DCM.y(m+indx)]';
     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
     
     % dcm error 
-    zeta_err_x = [time simoutx(q,2)-xi_X]';
-    zeta_err_y = [time simouty(q,2)-xi_Y]';
-    ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
-    ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y);
+%     zeta_err_x = [time simoutx(q,2)-xi_X]';
+%     zeta_err_y = [time simouty(q,2)-xi_Y]';
+%     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
+%     ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y);
+%     zeta_err_x = [time simoutx(q,2)-DCM.x(m+indx)]';
+%     zeta_err_y = [time simouty(q,2)-DCM.y(m+indx)]';
+%     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
+%     ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y);
     
     % update QP constraint parameters 
-    PcZMP_y(q,n+1) = -(exp(omega*(T-t+0.05)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.05)));
-    PcZMP_x(q,n+1) = -(exp(omega*(T-t+0.02)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.02)));
+%     PcZMP_y(q,n+1) = -(exp(omega*(T-t+0.05)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.05)));
+%     PcZMP_x(q,n+1) = -(exp(omega*(T-t+0.02)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.02)));
     
-    if abs(PcZMP_y(q,n+1)) >= 0.04
-       if  PcZMP_y(q,n+1) > 0
-           PcZMP_y(q,n+1) = 0.04;
-       else
-           PcZMP_y(q,n+1) = -0.04;
-       end
-    end
-    if abs(PcZMP_x(q,n+1)) >= 0.08
-       if  PcZMP_x(q,n+1) > 0
-           PcZMP_x(q,n+1) = 0.08;
-       else
-           PcZMP_x(q,n+1) = -0.08;
-       end
-    end 
+%     if abs(PcZMP_y(q,n+1)) >= 0.04
+%        if  PcZMP_y(q,n+1) > 0
+%            PcZMP_y(q,n+1) = 0.04;
+%        else
+%            PcZMP_y(q,n+1) = -0.04;
+%        end
+%     end
+%     if abs(PcZMP_x(q,n+1)) >= 0.08
+%        if  PcZMP_x(q,n+1) > 0
+%            PcZMP_x(q,n+1) = 0.08;
+%        else
+%            PcZMP_x(q,n+1) = -0.08;
+%        end
+%     end 
     L_min = u0(1) - .5;
     L_max = u0(1) + .5;
     if mod(n,2) == 0
@@ -277,11 +288,11 @@ while Step(i) == 1
     end
     
     % QP
-    [qpresult, Opt_Vector] = controller2(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
-          b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
-          zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)); %PcZMP_y(q,n+1), PcZMP_x(q,n+1)
+%     [qpresult, Opt_Vector] = controller2(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
+%           b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
+%           zeta_err_x, zeta_err_y, 0, 0); %PcZMP_y(q,n+1), PcZMP_x(q,n+1)
 
-    T = (1/omega)*log(Opt_Vector(3));
+%     T = (1/omega)*log(Opt_Vector(3));
 
     % Sup leg pos
     u0_x = [t + sum(Ts) u0x]';
@@ -290,22 +301,21 @@ while Step(i) == 1
     U0_y = horzcat(U0_y, u0_y);
     
     % Swg leg new destination
-    uT_x = [t + sum(Ts) Opt_Vector(1)]';
-    uT_y = [t + sum(Ts) Opt_Vector(2)]';
-    UT_x = horzcat(UT_x, uT_x);
-    UT_y = horzcat(UT_y, uT_y);
+%     uT_x = [t + sum(Ts) Opt_Vector(1)]';
+%     uT_y = [t + sum(Ts) Opt_Vector(2)]';
+%     UT_x = horzcat(UT_x, uT_x);
+%     UT_y = horzcat(UT_y, uT_y);
 
-    PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
-    PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
+%     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
+%     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
     
     t = t + t_sample;
     
 %     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
-    fnl(end)
     [n T t]
     
     % going next step
-    if t>=T
+    if t>=T+t_sample
         t = 0;
         Ts(i) = T;
         i = i+1;
@@ -318,8 +328,10 @@ while Step(i) == 1
         V0 = omega*(term1-term2);
         
         % new Sup leg pos = last Swg leg destination pos
-        u0x = Opt_Vector(1);
-        u0y = Opt_Vector(2);
+%         u0x = Opt_Vector(1);
+%         u0y = Opt_Vector(2);
+        u0x = r_vrp(n+1,1);
+        u0y = r_vrp(n+1,2);
         u0 = [u0x u0y]';
         q = 0;
         ini_org = ini;
@@ -333,28 +345,41 @@ while Step(i) == 1
 end
 
 %% plot result
+U0_x(1,:) = U0_x(1,:)+2*ones(1,length(U0_x));
+U0_y(1,:) = U0_y(1,:)+2*ones(1,length(U0_y));
+CoMx(1,:) = CoMx(1,:)+2*ones(1,length(CoMx));
+CoMy(1,:) = CoMy(1,:)+2*ones(1,length(CoMy));
+ZETA_mea_x(1,:) = ZETA_mea_x(1,:)+2*ones(1,length(ZETA_mea_x));
+ZETA_mea_y(1,:) = ZETA_mea_y(1,:)+2*ones(1,length(ZETA_mea_y));
+
 t_sim = t_sample:t_sample:(fnl(end)+t_ini/t_sample)*t_sample;
-figure(1)
-plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g');hold on;
-plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
-plot(CoMx(1,:),CoMx(2,:),'color','m');hold on;
-plot(UT_x(1,:),UT_x(2,:),'color','b');hold on;
-plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
+% figure(1)
+% plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g');hold on;
+% plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
+% plot(CoMx(1,:),CoMx(2,:),'color','m');hold on;
+% plot(UT_x(1,:),UT_x(2,:),'color','b');hold on;
+% plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
 figure(3)
 plot(t_sim,p_ref(1:fnl(end)+indx,1),'color','r','LineStyle',':','linewidth',2);hold on;
+plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)+1),CoM.x(1,:),'color','m','LineStyle',':','linewidth',2);hold on;
+plot(CoMx(1,:),CoMx(2,:),'color','m');hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)),DCM.x(1,:),'color','k','LineStyle',':','linewidth',2);hold on;
+plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','k');hold on;
 % plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
-figure(2)
-plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
-plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
-plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
-plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
-plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);hold on;
+% figure(2)
+% plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
+% plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
+% plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
+% plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+% plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);hold on;
 figure(4)
 plot(t_sim,p_ref(1:fnl(end)+indx,2),'color','r','LineStyle',':','linewidth',2);hold on;
+plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)+1),CoM.y(1,:),'color','m','LineStyle',':','linewidth',2);hold on;
+plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
 plot(t_sim(1:end-int32(t_fnl/t_sample)),DCM.y(1,:),'color','k','LineStyle',':','linewidth',2);hold on;
+plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','k','linewidth',2);hold on;
 % plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
 
 %functions definition
