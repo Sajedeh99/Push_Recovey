@@ -1,3 +1,4 @@
+clear all; clc; close all;
 N = 10;
 is_left = false;
 
