@@ -24,11 +24,11 @@ A=[
     ];
 
 B=[
-     L_max - uTx_ref
-   -(L_min - uTx_ref)
-     W_max - uTy_ref
-   -(W_min - uTy_ref)
-     exp(w0*T_max) - exp(w0*T)
+     L_max - uTx_ref;
+   -(L_min - uTx_ref);
+     W_max - uTy_ref;
+   -(W_min - uTy_ref);
+     exp(w0*T_max) - exp(w0*T);
    -(exp(w0*T_min) - exp(w0*T))
     ];
 
