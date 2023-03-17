@@ -118,6 +118,20 @@ while Step(i) == 1
        r_vrp(j+2,2) = r_vrp(j+2,2) + qpresult(3);
     end
     
+    if is_left
+        r_f_l = r_vrp;
+        r_f_r = r_vrp;
+        r_f_l(1,:) = [0 (Lp/2 + Wnom) 0];
+        r_f_l(3:2:N+3,:)=r_f_l(2:2:N+floor((N+2)/2),:);
+        r_f_r(2:2:N+3,:)=r_f_r(1:2:N+floor((N+2)/2),:);
+    else
+        r_f_r = r_vrp;
+        r_f_l = r_vrp;
+        r_f_r(1,:) = [0 -(Lp/2 + Wnom) 0];
+        r_f_r(3:2:N+3,:)=r_f_r(2:2:N+floor((N+2)/2),:);
+        r_f_l(2:2:N+3,:)=r_f_l(1:2:N+floor((N+2)/2),:);
+    end
+    
     % regenerate DCM pattern 
     xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
     xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
