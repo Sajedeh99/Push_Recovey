@@ -108,6 +108,8 @@ ZETA_err_y = [];
 t = t_sample; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 0; n = 0; s = 0;
 qpresult = [0;0;0;0;0];
+init_time = t
+final_time = T
 %% control loop
 while Step(i) == 1
     q = q+1;
@@ -119,14 +121,14 @@ while Step(i) == 1
     end
     
     if is_left
-        r_f_l = r_vrp;
-        r_f_r = r_vrp;
+        r_f_l = [1 1 0].*r_vrp;
+        r_f_r = [1 1 0].*r_vrp;
         r_f_l(1,:) = [0 (Lp/2 + Wnom) 0];
         r_f_l(3:2:N+3,:)=r_f_l(2:2:N+floor((N+2)/2),:);
         r_f_r(2:2:N+3,:)=r_f_r(1:2:N+floor((N+2)/2),:);
     else
-        r_f_r = r_vrp;
-        r_f_l = r_vrp;
+        r_f_r = [1 1 0].*r_vrp;
+        r_f_l = [1 1 0].*r_vrp;
         r_f_r(1,:) = [0 -(Lp/2 + Wnom) 0];
         r_f_r(3:2:N+3,:)=r_f_r(2:2:N+floor((N+2)/2),:);
         r_f_l(2:2:N+3,:)=r_f_l(1:2:N+floor((N+2)/2),:);
@@ -201,7 +203,10 @@ while Step(i) == 1
           zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)); %PcZMP_y(q,n+1), PcZMP_x(q,n+1)
 
     T = (1/omega)*log(Opt_Vector(3));
-
+ 
+    % swg foot traj generation
+    final_time = T + sum(Ts)
+    
     % Sup leg pos
     u0_x = [t + sum(Ts) u0x]';
     u0_y = [t + sum(Ts) u0y]';
@@ -219,13 +224,14 @@ while Step(i) == 1
     
     t = t + t_sample;
     
-    [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
+%     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
     [n T t]
     
     % going next step
     if t>T
         t = 0;
         Ts(i) = T;
+        init_time = sum(Ts)
         i = i+1;
         Step(i) = 1;
         n = length(Step)-1;
