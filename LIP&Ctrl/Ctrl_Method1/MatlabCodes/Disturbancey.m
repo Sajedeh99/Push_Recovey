@@ -6,7 +6,7 @@ d=0;
 
 F=310; m=60;
 
-if step==3 && t<=0.1
-    d=-F/m;
-end
+% if step==3 && t<=0.1
+%     d=-F/m;
+% end
 end

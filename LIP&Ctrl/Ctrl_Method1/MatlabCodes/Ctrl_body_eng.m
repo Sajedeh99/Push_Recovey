@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 10;
+N = 2;
 is_left = false;
 
 Lp = 0.2;
@@ -24,34 +24,53 @@ t_sample = 0.001;
 traj_ds = struct('index', {}, 'xi_ds', {}, 'state', {});
 traj_ss = struct('index', {}, 'xi_ss', {}, 'state', {});
 
-for i=1:N+3
-    if i == 1
-        r_f_r(i,1) = 0;
-        r_f_l(i,1) = 0;
-    elseif i == N+3
-        r_f_l(i, 1) = (Lnom)*(i-2);
-        r_f_r(i,1) = (Lnom)*(i-2);
-    elseif mod(i,2) == 0
-        r_f_l(i,1) = (Lnom)*(i-1);
-        r_f_r(i,1) = r_f_r(i-1,1);  
-    else
-        r_f_r(i,1) = (Lnom)*(i-1);
-        r_f_l(i,1) = r_f_l(i-1,1);
+% for i=1:N+3
+%     if i == 1
+%         r_f_r(i,1) = 0;
+%         r_f_l(i,1) = 0;
+%     elseif i == N+3
+%         r_f_l(i, 1) = (Lnom)*(i-2);
+%         r_f_r(i,1) = (Lnom)*(i-2);
+%     elseif mod(i,2) == 0
+%         r_f_l(i,1) = (Lnom)*(i-1);
+%         r_f_r(i,1) = r_f_r(i-1,1);  
+%     else
+%         r_f_r(i,1) = (Lnom)*(i-1);
+%         r_f_l(i,1) = r_f_l(i-1,1);
+%     end
+%     r_f_l(i,2:3) = [(Lp/2 + Wnom) 0];
+%     r_f_r(i,2:3) = [-(Lp/2 + Wnom) 0];
+% end
+% r_vrp = r_f_r;
+% r_vrp(2:2:N+3, 1:2) = r_f_l(2:2:N+3,1:2);
+% if is_left == false
+%     temp = r_f_l;
+%     r_f_l = [1 -1 1].*r_f_r;
+%     r_f_r = [1 -1 1].*temp;
+%     r_vrp = r_f_l;
+%     r_vrp(2:2:N+3, 1:2) = r_f_r(2:2:N+3,1:2);
+% end
+% r_vrp(:,3) =+ delta_z_vrp;
+% r_vrp(end,:) = [1 1 1].*r_vrp(end,:);
+
+%%
+if is_left
+    foot_plants = [0 -(Lp/2 + Wnom) 0];
+    for i=2:N+2
+        foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i)*(Lp/2 + Wnom) 0];
     end
-    r_f_l(i,2:3) = [(Lp/2 + Wnom) 0];
-    r_f_r(i,2:3) = [-(Lp/2 + Wnom) 0];
+else
+    foot_plants = [0 (Lp/2 + Wnom) 0];
+    for i=2:N+2
+        foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i-1)*(Lp/2 + Wnom) 0];
+    end
 end
-r_vrp = r_f_r;
-r_vrp(2:2:N+3, 1:2) = r_f_l(2:2:N+3,1:2);
-if is_left == false
-    temp = r_f_l;
-    r_f_l = [1 -1 1].*r_f_r;
-    r_f_r = [1 -1 1].*temp;
-    r_vrp = r_f_l;
-    r_vrp(2:2:N+3, 1:2) = r_f_r(2:2:N+3,1:2);
-end
+foot_plants(end+1, :) = [1,-1, 1] .* foot_plants(end,:);
+
+r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
-r_vrp(end,:) = [1 0 1].*r_vrp(end,:);
+
+%%
 
 [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
 for ith = 1:N+2
@@ -209,7 +228,7 @@ while Step(i) == 1
         q = 0;
     end
 
-    if n == N+1 % N
+    if n == N+2 % N
         break
     end
 end
@@ -220,16 +239,16 @@ plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g');hold on;
 plot(CoMx(1,:),CoMx(2,:),'color','m');hold on;
 plot(UT_x(1,:),UT_x(2,:),'color','b');hold on;
 plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);
-plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
-legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','P_{cZMP,x}')
+% plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
+legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}') %,'P_{cZMP,x}'
 figure(2)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
 plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
 plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
-plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
-legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','P_{cZMP,y}')
+% plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
+legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}') %,'P_{cZMP,y}'
 
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
