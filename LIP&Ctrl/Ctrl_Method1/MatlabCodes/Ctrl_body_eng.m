@@ -13,7 +13,8 @@ Vx = 0.5;
 Vy = 0.0;
 
 m = 60;
-g = 9.8; 
+g = 9.8;
+swingHeight = 0.1;
 delta_z_vrp = 0.8;
 omega = sqrt(g/delta_z_vrp);
 
@@ -74,6 +75,8 @@ ZETA_mea_y = [];
 % DCM error array
 ZETA_err_x = [];
 ZETA_err_y = [];
+% SWG Trajectory
+SWG_traj = [];
 % time 
 t = t_sample; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 0; n = 0; s = 0;
@@ -194,9 +197,11 @@ while Step(i) == 1
         end
     end
     
+    [qswing, dqswing, ddqswing] = getSwingFootTraj(swingfootpos0', swingfootpos1', swingHeight, ...
+                        init_time, final_time,t_sample);   
     
-    
-    
+    swg_traj = [time qswing(:,q)' dqswing(:,q)' ddqswing(:,q)']';
+    SWG_traj = horzcat(SWG_traj,swg_traj);
     % Sup leg pos
     u0_x = [t + sum(Ts) u0x]';
     u0_y = [t + sum(Ts) u0y]';
