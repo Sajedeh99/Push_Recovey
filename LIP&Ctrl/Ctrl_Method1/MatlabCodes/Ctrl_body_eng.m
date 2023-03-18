@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 7;
+N = 4;
 is_left = false;
 
 Lp = 0.2;
@@ -219,7 +219,7 @@ while Step(i) == 1
     
     t = t + t_sample;
     
-%     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
+    [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
     [n T t]
     
     % going next step
