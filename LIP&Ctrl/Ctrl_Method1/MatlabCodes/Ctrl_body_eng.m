@@ -24,35 +24,6 @@ t_sample = 0.001;
 traj_ds = struct('index', {}, 'xi_ds', {}, 'state', {});
 traj_ss = struct('index', {}, 'xi_ss', {}, 'state', {});
 
-% for i=1:N+3
-%     if i == 1
-%         r_f_r(i,1) = 0;
-%         r_f_l(i,1) = 0;
-%     elseif i == N+3
-%         r_f_l(i, 1) = (Lnom)*(i-2);
-%         r_f_r(i,1) = (Lnom)*(i-2);
-%     elseif mod(i,2) == 0
-%         r_f_l(i,1) = (Lnom)*(i-1);
-%         r_f_r(i,1) = r_f_r(i-1,1);  
-%     else
-%         r_f_r(i,1) = (Lnom)*(i-1);
-%         r_f_l(i,1) = r_f_l(i-1,1);
-%     end
-%     r_f_l(i,2:3) = [(Lp/2 + Wnom) 0];
-%     r_f_r(i,2:3) = [-(Lp/2 + Wnom) 0];
-% end
-% r_vrp = r_f_r;
-% r_vrp(2:2:N+3, 1:2) = r_f_l(2:2:N+3,1:2);
-% if is_left == false
-%     temp = r_f_l;
-%     r_f_l = [1 -1 1].*r_f_r;
-%     r_f_r = [1 -1 1].*temp;
-%     r_vrp = r_f_l;
-%     r_vrp(2:2:N+3, 1:2) = r_f_r(2:2:N+3,1:2);
-% end
-% r_vrp(:,3) =+ delta_z_vrp;
-% r_vrp(end,:) = [1 1 1].*r_vrp(end,:);
-
 %%
 if is_left
     foot_plants = [0 -(Lp/2 + Wnom) 0];
@@ -71,7 +42,6 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
-
 [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
 for ith = 1:N+2
     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
@@ -108,8 +78,8 @@ ZETA_err_y = [];
 t = t_sample; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 0; n = 0; s = 0;
 qpresult = [0;0;0;0;0];
-init_time = t
-final_time = T
+init_time = t;
+final_time = T;
 %% control loop
 while Step(i) == 1
     q = q+1;
@@ -205,7 +175,27 @@ while Step(i) == 1
     T = (1/omega)*log(Opt_Vector(3));
  
     % swg foot traj generation
-    final_time = T + sum(Ts)
+    final_time = T + sum(Ts);
+    if is_left
+        if mod(n+1,2) ~= 0
+            swingfootpos0 = r_f_l(n+1, :);
+            swingfootpos1 = r_f_l(n+2, :);
+        else
+            swingfootpos0 = r_f_r(n+1, :);
+            swingfootpos1 = r_f_r(n+2, :);
+        end
+    else
+        if mod(n+1,2) ~= 0
+            swingfootpos0 = r_f_r(n+1, :);
+            swingfootpos1 = r_f_r(n+2, :);
+        else
+            swingfootpos0 = r_f_l(n+1, :);
+            swingfootpos1 = r_f_l(n+2, :);
+        end
+    end
+    
+    
+    
     
     % Sup leg pos
     u0_x = [t + sum(Ts) u0x]';
@@ -231,7 +221,7 @@ while Step(i) == 1
     if t>T
         t = 0;
         Ts(i) = T;
-        init_time = sum(Ts)
+        init_time = sum(Ts);
         i = i+1;
         Step(i) = 1;
         n = length(Step)-1;
