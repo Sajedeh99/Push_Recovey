@@ -12,6 +12,10 @@ T_max = 1;
 Vx = 0.5;
 Vy = 0.0;
 
+msup = 0;
+mswg = 0;
+mpend = 60;
+mfeet = 0;
 m = 60;
 g = 9.8;
 swingHeight = 0.1;
@@ -77,6 +81,8 @@ ZETA_err_x = [];
 ZETA_err_y = [];
 % SWG Trajectory
 SWG_traj = [];
+M_FEET = [];
+ZMP_FEET = [];
 % time 
 t = t_sample; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 0; n = 0; s = 0;
@@ -177,7 +183,7 @@ while Step(i) == 1
 
     T = (1/omega)*log(Opt_Vector(3));
  
-    % swg foot traj generation
+    % swg leg traj generation
     final_time = T + sum(Ts);
     if is_left
         if mod(n+1,2) ~= 0
@@ -202,6 +208,7 @@ while Step(i) == 1
     
     swg_traj = [time qswing(:,q)' dqswing(:,q)' ddqswing(:,q)']';
     SWG_traj = horzcat(SWG_traj,swg_traj);
+    
     % Sup leg pos
     u0_x = [t + sum(Ts) u0x]';
     u0_y = [t + sum(Ts) u0y]';
@@ -216,6 +223,14 @@ while Step(i) == 1
 
     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
+    
+    % three mass parameters evaluation
+    m_feet = [time; mswg*(qswing(1:2,q) -  [u0_x(2); u0_y(2)])*(g + ddqswing(3,q))...
+        - mswg*(ddqswing(1:2,q))*(qswing(3,q) - delta_z_vrp)];
+    M_FEET = horzcat(M_FEET, m_feet);
+    
+    zmp_feet = [time; m_feet(2:3)/(mfeet*g) + [u0_x(2); u0_y(2)]];
+    ZMP_FEET = horzcat(ZMP_FEET, zmp_feet)
     
     t = t + t_sample;
     
