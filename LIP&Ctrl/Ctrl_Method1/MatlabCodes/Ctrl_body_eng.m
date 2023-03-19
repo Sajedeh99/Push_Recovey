@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 4;
+N = 7;
 is_left = false;
 
 Lp = 0.2;
@@ -8,18 +8,18 @@ W_min0 = 0.1;
 L_max0 = 0.5;
 W_max0 = 0.4;
 T_min = 0.3;
-T_max = 1;
+T_max = 1.3;
 Vx = 0.5;
 Vy = 0.0;
 
-msup = 0;
-mswg = 0;
-mpend = 60;
-mfeet = 0;
+msup = 5;
+mswg = 5;
+mpend = 50;
+mfeet = 10;
 m = 60;
 g = 9.8;
 swingHeight = 0.1;
-delta_z_vrp = 0.8;
+delta_z_vrp = 0.68;
 omega = sqrt(g/delta_z_vrp);
 
 [Tnom,Lnom,Wnom,tau_nom] = Param_fcn(L_min0, L_max0, W_min0, W_max0, T_min, T_max, omega, Vx, Vy);
@@ -230,7 +230,7 @@ while Step(i) == 1
     M_FEET = horzcat(M_FEET, m_feet);
     
     zmp_feet = [time; m_feet(2:3)/(mfeet*g) + [u0_x(2); u0_y(2)]];
-    ZMP_FEET = horzcat(ZMP_FEET, zmp_feet)
+    ZMP_FEET = horzcat(ZMP_FEET, zmp_feet);
     
     t = t + t_sample;
     
@@ -272,7 +272,8 @@ plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
 % plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
 plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
 plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
-legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','swg_{x}','swg_{z}') %,'P_{cZMP,x}'
+plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
+legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','swg_{x}','swg_{z}','zmp_{feet}') %,'P_{cZMP,x}'
 figure(2)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
 plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
@@ -281,7 +282,8 @@ plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
 % plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
 plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
-legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','swg_{y}') %,'P_{cZMP,y}'
+plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
+legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','swg_{y}','zmp_{feet}') %,'P_{cZMP,y}'
 
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
