@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 5;
+N = 1;
 is_left = false;
 
 Lp = 0.2;
@@ -54,11 +54,14 @@ end
 %% initial values
 % Sup leg initial pos
 u0 = [0 Lp/2]';
+zmp_pend = [0 0 Lp/2]';
 u0x = u0(1);
 u0y = u0(2);
 % IP initial pos & vel
 x0 = [xi_ini(1,1) xi_ini(1,2)]';
+x0_3Mass = [xi_ini(1,1) xi_ini(1,2)]';
 V0 = [0 0]';
+V0_3Mass = [0 0]';
 % sup leg pos array
 U0_x = [];
 U0_y = [];
@@ -68,6 +71,8 @@ UT_y = [];
 % CoM pos array
 CoMx = [];
 CoMy = [];
+CoMx_3Mass = [];
+CoMy_3Mass = [];
 PcZMP_Y = [];
 PcZMP_X = [];
 % reference DCM array
@@ -76,6 +81,8 @@ XI_ref_Y = [];
 % measured DCM array
 ZETA_mea_x = [];
 ZETA_mea_y = [];
+ZETA_mea_x_3Mass = [];
+ZETA_mea_y_3Mass = [];
 % DCM error array
 ZETA_err_x = [];
 ZETA_err_y = [];
@@ -123,7 +130,7 @@ while Step(i) == 1
         sim('LIPM_Dynamicsx',[t_sample T_max]);
         sim('LIPM_Dynamicsy',[t_sample T_max]);
     end
-    
+
     % time variable is the local time
     time = Tsim(q) + sum(Ts);
     
@@ -136,6 +143,26 @@ while Step(i) == 1
     zeta_mea_y = [time simouty(q,2)]';
     ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
     ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
+    
+    % measured com and dcm of 3Mass IP
+    % three mass parameters evaluation    
+    sim('LIPM_Dynamicsx_3Mass',[t_sample 2*t_sample]);
+    sim('LIPM_Dynamicsy_3Mass',[t_sample 2*t_sample]);
+    CoM_x_3Mass = [time simoutx_3Mass(2,1)]';
+    CoM_y_3Mass = [time simouty_3Mass(2,1)]';
+    CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
+    CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
+    
+    zeta_mea_x_3Mass = [time simoutx_3Mass(2,2)]';
+    zeta_mea_y_3Mass = [time simouty_3Mass(2,2)]';
+    ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,zeta_mea_x_3Mass);
+    ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,zeta_mea_y_3Mass);
+ 
+    % initial x0 & v0 for 3Mass IP in next step
+    x0_3Mass = [CoM_x_3Mass(2) CoM_y_3Mass(2)]';
+    term1_3Mass = [zeta_mea_x_3Mass(2), zeta_mea_y_3Mass(2)];
+    term2_3Mass = [CoM_x_3Mass(2) CoM_y_3Mass(2)];
+    V0_3Mass = omega*(term1_3Mass-term2_3Mass);
     
     % reference dcm
     xi_ref_X = [time xi_X]';
@@ -225,7 +252,8 @@ while Step(i) == 1
     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
     
-    % three mass parameters evaluation
+    % three mass parameters evaluation 
+        
     m_feet = [time; mswg*(qswing(1:2,q) -  [u0_x(2); u0_y(2)])*(g + ddqswing(3,q))...
         - mswg*(ddqswing(1:2,q))*(qswing(3,q) - delta_z_vrp)];
     M_FEET = horzcat(M_FEET, m_feet);
