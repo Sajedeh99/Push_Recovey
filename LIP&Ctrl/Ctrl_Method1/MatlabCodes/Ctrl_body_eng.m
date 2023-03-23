@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 1;
+N = 5;
 is_left = false;
 
 Lp = 0.2;
@@ -97,11 +97,18 @@ t = t_sample; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 0; n = 0; s = 0;
 qpresult = [0;0;0;0;0];
 init_time = t;
-final_time = T;
+final_time = T; F = 0;
 %% control loop
 while Step(i) == 1
     q = q+1;
     s = s+1;
+    
+    % Disturbance insertation
+    if n+1 == 3 && t <= 0.1
+        F = 100;
+    else
+        F = 0;
+    end
     % update pattern parameter
     for j = n:N+1
        r_vrp(j+2,1) = r_vrp(j+2,1) + qpresult(1);
@@ -248,28 +255,28 @@ while Step(i) == 1
  %%    
     % measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
-    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1));
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1),F);
 
     k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
-    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1));
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1),F);
 
     k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
-    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1));
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1),F);
 
     k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
-    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1));
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1),F);
     
     k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
-    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2));
+    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2),F);
 
     k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
-    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2,u0(2));
+    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2,u0(2),F);
 
     k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
-    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2,u0(2));
+    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2,u0(2),F);
 
     k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
-    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y,u0(2));
+    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y,u0(2),F);
     
     % update values for time = 0.002
     V0_3Mass = V0_3Mass + t_sample*omega^2*(x0_3Mass-u0);
@@ -323,11 +330,11 @@ end
 figure(1)
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
 
-plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g','linewidth',2);hold on;
-% plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
+% plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g','linewidth',2);hold on;
+plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
 
-plot(CoMx(1,:),CoMx(2,:),'color','m','linewidth',2);hold on;
-% plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
+% plot(CoMx(1,:),CoMx(2,:),'color','m','linewidth',2);hold on;
+plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
 
 plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
 plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
@@ -341,11 +348,11 @@ legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','swg_{x}'
 figure(2)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
 
-plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
-% plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
+% plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
+plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
 
-plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
-% plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
+% plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
+plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
 
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
@@ -368,7 +375,9 @@ end
 function dxdt = f1(t,x,v)
 dxdt = v;
 end
-function dvdt = f2(t,x,v,u)
+function dvdt = f2(t,x,v,u,F)
 omega = 3.5;
-dvdt = omega^2*(x-u);
+m = 60;
+d = -F/m;
+dvdt = omega^2*(x-u) + d;
 end
