@@ -54,13 +54,12 @@ end
 %% initial values
 % Sup leg initial pos
 u0 = [0 Lp/2]';
+u0x = u0(1); u0y = u0(2);
 zmp_pend = [0 0 Lp/2]';
-u0x = u0(1);
-u0y = u0(2);
 % IP initial pos & vel
 x0 = [xi_ini(1,1) xi_ini(1,2)]';
-x0_3Mass = [xi_ini(1,1) xi_ini(1,2)]';
 V0 = [0 0]';
+x0_3Mass = [xi_ini(1,1) xi_ini(1,2)]';
 V0_3Mass = [0 0]';
 % sup leg pos array
 U0_x = [];
@@ -91,8 +90,9 @@ SWG_traj = [];
 M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
+
 % time 
-t = t_sample; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
+t = t_sample; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 0; n = 0; s = 0;
 qpresult = [0;0;0;0;0];
 init_time = t;
@@ -143,26 +143,6 @@ while Step(i) == 1
     zeta_mea_y = [time simouty(q,2)]';
     ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
     ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
-    
-    % measured com and dcm of 3Mass IP
-    % three mass parameters evaluation    
-    sim('LIPM_Dynamicsx_3Mass',[t_sample 2*t_sample]);
-    sim('LIPM_Dynamicsy_3Mass',[t_sample 2*t_sample]);
-    CoM_x_3Mass = [time simoutx_3Mass(2,1)]';
-    CoM_y_3Mass = [time simouty_3Mass(2,1)]';
-    CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
-    CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
-    
-    zeta_mea_x_3Mass = [time simoutx_3Mass(2,2)]';
-    zeta_mea_y_3Mass = [time simouty_3Mass(2,2)]';
-    ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,zeta_mea_x_3Mass);
-    ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,zeta_mea_y_3Mass);
- 
-    % initial x0 & v0 for 3Mass IP in next step
-    x0_3Mass = [CoM_x_3Mass(2) CoM_y_3Mass(2)]';
-    term1_3Mass = [zeta_mea_x_3Mass(2), zeta_mea_y_3Mass(2)];
-    term2_3Mass = [CoM_x_3Mass(2) CoM_y_3Mass(2)];
-    V0_3Mass = omega*(term1_3Mass-term2_3Mass);
     
     % reference dcm
     xi_ref_X = [time xi_X]';
@@ -251,9 +231,9 @@ while Step(i) == 1
 
     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
-    
+
+    %%
     % three mass parameters evaluation 
-        
     m_feet = [time; mswg*(qswing(1:2,q) -  [u0_x(2); u0_y(2)])*(g + ddqswing(3,q))...
         - mswg*(ddqswing(1:2,q))*(qswing(3,q) - delta_z_vrp)];
     M_FEET = horzcat(M_FEET, m_feet);
@@ -263,7 +243,52 @@ while Step(i) == 1
     
     zmp_pend = [time; (m/mpend)*[u0_x(2); u0_y(2)] - (mfeet/mpend)*zmp_feet(2:3)];
     ZMP_PEND = horzcat(ZMP_PEND, zmp_pend);
+
+ %%    
+    % measured com and dcm of 3Mass IP
+    k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1));
+
+    k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1));
+
+    k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1));
+
+    k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1));
     
+    k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
+    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2));
+
+    k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
+    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2,u0(2));
+
+    k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
+    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2,u0(2));
+
+    k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
+    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y,u0(2));
+    
+    % update values for time = 0.002
+    V0_3Mass = V0_3Mass + t_sample*omega^2*(x0_3Mass-u0);
+    x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
+    x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
+    t0 = t0 + t_sample;
+
+    % calculate com and dcm for time = 0.001
+    CoM_x_3Mass = [time x0_3Mass(1)]';
+    CoM_y_3Mass = [time x0_3Mass(2)]';
+    CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
+    CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
+    
+    xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
+    zeta_mea_x_3Mass = [time xi_meas_3Mass(1)]';
+    zeta_mea_y_3Mass = [time xi_meas_3Mass(2)]';
+    ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,zeta_mea_x_3Mass);
+    ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,zeta_mea_y_3Mass);
+    %%
+
     t = t + t_sample;
     
     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
@@ -272,6 +297,7 @@ while Step(i) == 1
     % going next step
     if t>T
         t = 0;
+        t0 = 0;
         Ts(i) = T;
         init_time = sum(Ts);
         i = i+1;
@@ -330,4 +356,11 @@ for i = N+1:-1:1
         xi_ini(i+1,:) = xi_eos(i,:);
 end
 xi_ini(1,:) = r_vrp(i,:) + (exp(-omega*Tnom))*(xi_eos(i,:)-r_vrp(i,:));
+end
+function dxdt = f1(t,x,v)
+dxdt = v;
+end
+function dvdt = f2(t,x,v,u)
+omega = 3.5;
+dvdt = omega^2*(x-u);
 end
