@@ -255,16 +255,16 @@ while Step(i) == 1
  %%    
     % measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
-    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1),F);
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1),0);
 
     k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
-    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1),F);
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1),0);
 
     k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
-    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1),F);
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1),0);
 
     k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
-    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1),F);
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1),0);
     
     k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
     l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2),F);
@@ -279,7 +279,7 @@ while Step(i) == 1
     l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y,u0(2),F);
     
     % update values for time = 0.002
-    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-u0)-F/m);
+    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-u0)+[0;-F/m]);
     x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
     x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
     t0 = t0 + t_sample;
