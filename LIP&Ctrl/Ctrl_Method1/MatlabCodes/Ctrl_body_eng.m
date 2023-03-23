@@ -105,7 +105,7 @@ while Step(i) == 1
     
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 100;
+        F = 50;
     else
         F = 0;
     end
@@ -159,8 +159,8 @@ while Step(i) == 1
     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
     
     % dcm error 
-    zeta_err_x = [time xi_meas_3Mass(1)-xi_X]'; %simoutx(q,2)
-    zeta_err_y = [time xi_meas_3Mass(2)-xi_Y]'; %simouty(q,2)
+    zeta_err_x = [time xi_meas_3Mass(1)-xi_X]'; %simoutx(q,2) xi_meas_3Mass(1)
+    zeta_err_y = [time xi_meas_3Mass(2)-xi_Y]'; %simouty(q,2) xi_meas_3Mass(2)
     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
     ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y);
     
@@ -279,7 +279,7 @@ while Step(i) == 1
     l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y,u0(2),F);
     
     % update values for time = 0.002
-    V0_3Mass = V0_3Mass + t_sample*omega^2*(x0_3Mass-u0);
+    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-u0)-F/m);
     x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
     x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
     t0 = t0 + t_sample;
