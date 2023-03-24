@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 6;
+N = 10;
 is_left = false;
 
 Lp = 0.2;
