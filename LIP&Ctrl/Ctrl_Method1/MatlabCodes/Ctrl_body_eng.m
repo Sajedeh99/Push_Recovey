@@ -47,6 +47,7 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
+
 [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
 for ith = 1:N+2
     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
@@ -93,14 +94,13 @@ ZMP_FEET = [];
 ZMP_PEND = [];
 
 % time 
-t = t_sample; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
+t = 0; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 1; n = 0;
 qpresult = [0;0;0;0;0];
 init_time = t;
 final_time = T; F = 0;
 %% control loop
 while Step(i) == 1
-
     
     % Disturbance insertation
 %     if n+1 == 3 && t <= 0.1
@@ -108,7 +108,7 @@ while Step(i) == 1
 %     else
 %         F = 0;
 %     end
-    % update pattern parameter
+    %% update pattern parameter
     for j = n:N+1
        r_vrp(j+2,1) = r_vrp(j+2,1) + qpresult(1);
        r_vrp(j+2,2) = r_vrp(j+2,2) + qpresult(3);
@@ -128,10 +128,6 @@ while Step(i) == 1
         r_f_l(2:2:N+3,:)=r_f_l(1:2:N+2,:);
     end
     
-    % regenerate DCM pattern 
-    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
-    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
-    
     %% simulate IP with initial value (u0, x0, v0) of ith Step
     if q == 1
         sim('LIPM_Dynamicsx',[t_sample T_max]);
@@ -150,8 +146,11 @@ while Step(i) == 1
     zeta_mea_y = [time xi_meas_3Mass(2)]'; %simouty(q,2) xi_meas_3Mass(2)
     ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
     ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
-    
-    %% reference dcm
+
+    %% regenerate DCM pattern 
+    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
+    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
+
     xi_ref_X = [time xi_X]';
     xi_ref_Y = [time xi_Y]';
     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
@@ -163,7 +162,7 @@ while Step(i) == 1
     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
     ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y);
     
-    % update QP constraint parameters 
+    %% QP 
     PcZMP_y(q,n+1) = -(exp(omega*(T-t+0.05)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.05)));
     PcZMP_x(q,n+1) = -(exp(omega*(T-t+0.02)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.02)));
     
@@ -184,6 +183,7 @@ while Step(i) == 1
     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
     
+    %% update QP constraint parameters
     L_min = u0(1) - .5;
     L_max = u0(1) + .5;
     if mod(n,2) == 0
@@ -207,13 +207,12 @@ while Step(i) == 1
     UT_x = horzcat(UT_x, uT_x);
     UT_y = horzcat(UT_y, uT_y);
     
- %% 
+    %% going next step
     t = t + t_sample;
     
     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
     [n T t]
     
-    % going next step
     if t>T
         t = 0;
         t0 = 0;
@@ -235,9 +234,11 @@ while Step(i) == 1
         q = 0;
     end
     
+    %% check ending condition
     if n == N+2 % N
        break
     end
+    
     q = q+1;
     
     % Sup leg pos
