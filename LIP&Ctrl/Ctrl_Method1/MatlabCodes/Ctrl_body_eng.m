@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 3;
+N = 5;
 is_left = false;
 
 Lp = 0.2;
@@ -211,7 +211,7 @@ while Step(i) == 1
     t = t + t_sample;
     
     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
-    [n T t zmp_pend(3)]
+    [n T t]
     
     % going next step
     if t>T
@@ -285,31 +285,31 @@ while Step(i) == 1
 
     %% measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
-    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1),0);
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), zmp_pend(2),0);
 
     k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
-    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1),0);
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, zmp_pend(2),0);
 
     k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
-    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1),0);
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, zmp_pend(2),0);
 
     k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
-    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1),0);
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, zmp_pend(2),0);
     
     k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
-    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2),F);
+    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), zmp_pend(3),F);
 
     k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
-    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2,u0(2),F);
+    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, zmp_pend(3),F);
 
     k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
-    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2,u0(2),F);
+    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, zmp_pend(3),F);
 
     k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
-    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y,u0(2),F);
+    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, zmp_pend(3),F);
     
     % update values for time = 0.002
-    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-u0)+[0;-F/m]);
+    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-zmp_pend(2:3))+[0;-F/m]);
     x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
     x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
     t0 = t0 + t_sample;
@@ -328,11 +328,11 @@ end
 figure(1)
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
 
-% plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g','linewidth',2);hold on;
-plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
+plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g','linewidth',2);hold on;
+% plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
 
-% plot(CoMx(1,:),CoMx(2,:),'color','m','linewidth',2);hold on;
-plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
+plot(CoMx(1,:),CoMx(2,:),'color','m','linewidth',2);hold on;
+% plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
 
 plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
 plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
@@ -346,11 +346,11 @@ legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','swg_{x}'
 figure(2)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
 
-% plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
-plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
+plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
+% plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
 
-% plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
-plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
+plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
+% plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
 
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
@@ -359,6 +359,20 @@ plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
 plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
 plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
 legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','swg_{y}','zmp_{feet}','zmp_{pend}') %,'P_{cZMP,y}'
+
+figure(3)
+plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
+plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
+plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-')
+plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
+plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
+
+figure(4)
+plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
+plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
+plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
+plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
 
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
