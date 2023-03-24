@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 5;
+N = 6;
 is_left = false;
 
 Lp = 0.2;
@@ -105,7 +105,7 @@ while Step(i) == 1
     
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 50;
+        F = 310;
     else
         F = 0;
     end
@@ -133,7 +133,7 @@ while Step(i) == 1
     xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
     xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
     
-    % simulate IP with initial value (u0, x0, v0) of ith Step
+    %% simulate IP with initial value (u0, x0, v0) of ith Step
     if q == 1
         sim('LIPM_Dynamicsx',[t_sample T_max]);
         sim('LIPM_Dynamicsy',[t_sample T_max]);
@@ -147,18 +147,18 @@ while Step(i) == 1
     CoM_y = [time simouty(q,1)]';
     CoMx = horzcat(CoMx,CoM_x);
     CoMy = horzcat(CoMy,CoM_y);
-    zeta_mea_x = [time simoutx(q,2)]';
-    zeta_mea_y = [time simouty(q,2)]';
+    zeta_mea_x = [time xi_meas_3Mass(1)]'; %simoutx(q,2) xi_meas_3Mass(1)
+    zeta_mea_y = [time xi_meas_3Mass(2)]'; %simouty(q,2) xi_meas_3Mass(2)
     ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
     ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
     
-    % reference dcm
+    %% reference dcm
     xi_ref_X = [time xi_X]';
     xi_ref_Y = [time xi_Y]';
     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
     
-    % dcm error 
+    %% dcm error 
     zeta_err_x = [time xi_meas_3Mass(1)-xi_X]'; %simoutx(q,2) xi_meas_3Mass(1)
     zeta_err_y = [time xi_meas_3Mass(2)-xi_Y]'; %simouty(q,2) xi_meas_3Mass(2)
     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
@@ -252,8 +252,38 @@ while Step(i) == 1
     zmp_pend = [time; (m/mpend)*[u0_x(2); u0_y(2)] - (mfeet/mpend)*zmp_feet(2:3)];
     ZMP_PEND = horzcat(ZMP_PEND, zmp_pend);
 
- %%    
-    % measured com and dcm of 3Mass IP
+ %% 
+    t = t + t_sample;
+    
+    [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
+    [n T t]
+    
+    % going next step
+    if t>T
+        t = 0;
+        t0 = 0;
+        Ts(i) = T;
+        init_time = sum(Ts);
+        i = i+1;
+        Step(i) = 1;
+        n = length(Step)-1;
+        % initial x0 & v0 for IP in next step
+        x0 = [CoM_x(2) CoM_y(2)]';
+        term1 = [simoutx(q,2), simouty(q,2)];
+        term2 = [simoutx(q,1), simouty(q,1)];
+        V0 = omega*(term1-term2);
+        
+        % new Sup leg pos = last Swg leg destination pos
+        u0x = Opt_Vector(1);
+        u0y = Opt_Vector(2);
+        u0 = [u0x u0y]';
+        q = 0;
+    end
+    
+    if n == N+2 % N
+       break
+    end
+    %% measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
     l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1),0);
 
@@ -293,38 +323,6 @@ while Step(i) == 1
     xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
     ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,[time xi_meas_3Mass(1)]');
     ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,[time xi_meas_3Mass(2)]');
-    %%
-
-    t = t + t_sample;
-    
-    [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
-    [n T t]
-    
-    % going next step
-    if t>T
-        t = 0;
-        t0 = 0;
-        Ts(i) = T;
-        init_time = sum(Ts);
-        i = i+1;
-        Step(i) = 1;
-        n = length(Step)-1;
-        % initial x0 & v0 for IP in next step
-        x0 = [CoM_x(2) CoM_y(2)]';
-        term1 = [simoutx(q,2), simouty(q,2)];
-        term2 = [simoutx(q,1), simouty(q,1)];
-        V0 = omega*(term1-term2);
-        
-        % new Sup leg pos = last Swg leg destination pos
-        u0x = Opt_Vector(1);
-        u0y = Opt_Vector(2);
-        u0 = [u0x u0y]';
-        q = 0;
-    end
-
-    if n == N+2 % N
-        break
-    end
 end
 %% plot result
 figure(1)

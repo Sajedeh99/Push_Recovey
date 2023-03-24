@@ -3,9 +3,9 @@ function d=Disturbancey(R)
 t=R(1); step=R(2);
 
 d=0;
-F = 50;
+F = 150;
 m=60;
-if step==3 && t<=0.1
-    d=-F/m;
-end
+% if step==3 && t<=0.1
+%     d=-F/m;
+% end
 end
