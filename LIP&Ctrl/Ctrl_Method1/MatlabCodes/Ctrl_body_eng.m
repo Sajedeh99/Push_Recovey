@@ -47,12 +47,15 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
-[r_vrp_, zmp_pend_, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m);
-% [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
-for ith = 1:N+1
-    b_nom(ith,:) = (xi_eos(ith,:) - zmp_pend_(ith*int32(T/t_sample)+1,:));
+[r_vrp_, zmp_pend_, xi_ini_, xi_eos_] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m);
+[xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
+for ith = 1:N+2
+    b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
 end
-b_nom(4,:) = [0 0 0];
+for ith = 1:N+1
+    b_nom_(ith,:) = (xi_eos_(ith,:) - zmp_pend_(ith*int32(T/t_sample)+1,:));
+end
+b_nom_(N+2,:) = [0 0 0];
 %% initial values
 % Sup leg initial pos
 u0 = [0 Lp/2]';

@@ -78,7 +78,7 @@ zmp_pend(:,3) = delta_z_vrp*ones(length(zmp_pend),1);
 
 function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, t_step, t_sample)
 xi_eos = zeros(N+2,3);
-xi_eos(N+2,:) = [zmp_pend(end,1) 0 zmp_pend(end,3)];
+xi_eos(N+2,:) = [zmp_pend(end,1) 0.1 zmp_pend(end,3)];
 for k = N+1:-1:1
         xi_eos(k,:) = zmp_pend(k*int32(t_step/t_sample)+1,:) + (exp(-omega*t_step))*(xi_eos(k+1,:)-zmp_pend(k*int32(t_step/t_sample)+1,:));
         xi_ini(k+1,:) = xi_eos(k,:);
