@@ -23,11 +23,11 @@ delta_z_vrp = 0.8;
 omega = sqrt(g/delta_z_vrp);
 
 [Tnom,Lnom,Wnom,tau_nom] = Param_fcn(L_min0, L_max0, W_min0, W_max0, T_min, T_max, omega, Vx, Vy);
+
+% time
 global t_sample
 t_sample = 0.001;
-
-traj_ds = struct('index', {}, 'xi_ds', {}, 'state', {});
-traj_ss = struct('index', {}, 'xi_ss', {}, 'state', {});
+t = 0; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 
 %%
 if is_left
@@ -47,7 +47,7 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
-
+[zmp_pend_, xi_ini_, xi_eos_] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m);
 [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
 for ith = 1:N+2
     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
@@ -93,8 +93,6 @@ M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
 
-% time 
-t = 0; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
 Step = 1; i = 1; q = 1; n = 0;
 qpresult = [0;0;0;0;0];
 init_time = t;
@@ -326,55 +324,45 @@ while Step(i) == 1
     ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,[time xi_meas_3Mass(2)]');
 end
 %% plot result
-figure(1)
-plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
-
-plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g','linewidth',2);hold on;
-% plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
-
-plot(CoMx(1,:),CoMx(2,:),'color','m','linewidth',2);hold on;
-% plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
-
-plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
-plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
-% plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
-plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
-plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
-plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
-plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-')
-legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','swg_{x}','swg_{z}','zmp_{feet}','zmp_{pend}') %,'P_{cZMP,x}'
-
-figure(2)
-plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
-
-plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
-% plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
-
-plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
-% plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
-
-plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
-plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
-% plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
-plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
-plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
-plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
-legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','swg_{y}','zmp_{feet}','zmp_{pend}') %,'P_{cZMP,y}'
-
+% figure(1)
+% plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
+% plot(ZETA_mea_x(1,:),ZETA_mea_x(2,:),'color','g','linewidth',2);hold on;
+% plot(CoMx(1,:),CoMx(2,:),'color','m','linewidth',2);hold on;
+% plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
+% plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
+% % plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
+% plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
+% plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
+% plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
+% plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-')
+% legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','swg_{x}','swg_{z}','zmp_{feet}','zmp_{pend}') %,'P_{cZMP,x}'
+%%
+% figure(2)
+% plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-','linewidth',2);hold on;
+% plot(ZETA_mea_y(1,:),ZETA_mea_y(2,:),'color','g','linewidth',2);hold on;
+% plot(CoMy(1,:),CoMy(2,:),'color','m','linewidth',2);hold on;
+% plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+% plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
+% % plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
+% plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
+% plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
+% plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
+% legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','swg_{y}','zmp_{feet}','zmp_{pend}') %,'P_{cZMP,y}'
+%%
 figure(3)
 plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
 plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
 plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-')
 plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
 plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
-
+%%
 figure(4)
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
 plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
 plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
 plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
-
+%%
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
 xi_eos = zeros(N+2,3);
