@@ -76,13 +76,13 @@ zmp_pend(:,3) = delta_z_vrp*ones(length(zmp_pend),1);
 
 [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample);
 
-function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, t_step, t_sample)
+function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, t_step, t_sample)
 xi_eos = zeros(N+2,3);
-xi_eos(N+2,:) = r_vrp(end,:);
+xi_eos(N+2,:) = [zmp_pend(end,1) 0 zmp_pend(end,3)];
 for k = N+1:-1:1
-        xi_eos(k,:) = r_vrp((k+1)*int32(t_step/t_sample),:) + (exp(-omega*t_step))*(xi_eos(k+1,:)-r_vrp((k+1)*int32(t_step/t_sample),:));
+        xi_eos(k,:) = zmp_pend(k*int32(t_step/t_sample)+1,:) + (exp(-omega*t_step))*(xi_eos(k+1,:)-zmp_pend(k*int32(t_step/t_sample)+1,:));
         xi_ini(k+1,:) = xi_eos(k,:);
 end
-xi_ini(1,:) = r_vrp(k*int32(t_step/t_sample),:) + (exp(-omega*t_step))*(xi_eos(k,:)-r_vrp(k*int32(t_step/t_sample),:));
+xi_ini(1,:) = zmp_pend(k*int32(t_step/t_sample),:) + (exp(-omega*t_step))*(xi_eos(k,:)-zmp_pend(k*int32(t_step/t_sample),:));
 end
 end
