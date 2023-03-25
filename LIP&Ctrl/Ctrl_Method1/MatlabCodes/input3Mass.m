@@ -1,4 +1,4 @@
-function [zmp_pend, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m)
+function [r_vrp, zmp_pend, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m)
 g = 9.807;
 omega = sqrt(g/delta_z_vrp);
 if is_left
