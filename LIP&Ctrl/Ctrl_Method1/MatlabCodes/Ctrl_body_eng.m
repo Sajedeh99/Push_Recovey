@@ -47,15 +47,15 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
-% [r_vrp_, zmp_pend_, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m);
+[r_vrp_, zmp_pend_, xi_ini_, xi_eos_] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, T_max, t_sample, mswg, msup, mpend, mfeet, m);
 [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
 for ith = 1:N+2
     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
 end
-% for ith = 1:N+1
-%     b_nom(ith,:) = (xi_eos(ith,:) - zmp_pend_(ith*int32(T/t_sample)+1,:));
-% end
-% b_nom(N+2,:) = [0 0 0];
+for ith = 1:N+1
+    b_nom_(ith,:) = (xi_eos_(ith,:) - zmp_pend_(ith*int32(T/t_sample)+1,:));
+end
+b_nom_(N+2,:) = [0 0 0];
 %% initial values
 % Sup leg initial pos
 u0 = [0 Lp/2]';
@@ -97,12 +97,17 @@ M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
 
-for i = 1:N+2
-    ini_org(i) = (i-1)*int32(Tnom/t_sample) + 1;
-    fnl_org(i) = i*int32(Tnom/t_sample);
+XI_ref_X_ = [];
+XI_ref_Y_ = [];
+
+ini_org(1) = 1; fnl_org(1) = Tnom/t_sample;
+for i = 2:N+2
+    ini_org(i) = (i-1)*(Tnom/t_sample) + (i-1);
+    fnl_org(i) = ini_org(i) + (Tnom/t_sample);
 end
-ini = int32(zeros(1,N+2));
-fnl = ini;
+ini_org(N+3) = fnl_org(N+2) + 1;
+ini = zeros(1,N+3);
+fnl = zeros(1,N+2);
 ini(1) = 1; 
 Step = 1; i = 1; q = 1; n = 0; s = 1; inc(s) = 0;
 qpresult = [0;0;0;0;0];
@@ -126,11 +131,16 @@ while Step(i) == 1
     xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
     xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
 
+    xi_X_ = zmp_pend_(ini_org(n+1)-1+q,1) + exp(omega*(t-T))*(zmp_pend_(ini_org(n+2)-1+q,1) + b_nom_(n+1,1) - zmp_pend_(ini_org(n+1)-1+q,1));
+    xi_Y_ = zmp_pend_(ini_org(n+1)-1+q,2) + exp(omega*(t-T))*(zmp_pend_(ini_org(n+2)-1+q,2) + b_nom_(n+1,2) - zmp_pend_(ini_org(n+1)-1+q,2));
+    
     xi_ref_X = [time xi_X]';
     xi_ref_Y = [time xi_Y]';
     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
-    
+
+    XI_ref_X_ = horzcat(XI_ref_X_,[time xi_X_]');
+    XI_ref_Y_ = horzcat(XI_ref_Y_,[time xi_Y_]');
         %% simulate IP with initial value (u0, x0, v0) of ith Step
     if q == 1
         sim('LIPM_Dynamicsx',[t_sample T_max]);
@@ -219,8 +229,8 @@ while Step(i) == 1
     end
     inc(s) = floor(T/t_sample) - int32(Tnom/t_sample);
     for ith = n+1:N+2
-        ini(ith+1:end) = ini_org(ith+1:end) + int32(inc(s)*ones(1,N+2-ith));
-        fnl(ith:end) = fnl_org(ith:end) + int32(inc(s)*ones(1,N+3-ith));
+        ini(ith+1:end) = ini_org(ith+1:end) + inc(s)*ones(1,N+3-ith);
+        fnl(ith:end) = fnl_org(ith:end) + inc(s)*ones(1,N+3-ith);
     end  
     %% going next step
     t = t + t_sample;

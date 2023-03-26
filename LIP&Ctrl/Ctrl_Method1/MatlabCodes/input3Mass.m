@@ -1,4 +1,4 @@
-function [r_vrp, zmp_pend, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m)
+function [r_vrp, zmp_pend, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, T_max, t_sample, mswg, msup, mpend, mfeet, m)
 g = 9.807;
 omega = sqrt(g/delta_z_vrp);
 if is_left
@@ -73,7 +73,7 @@ for ith = 1:N+2
     end
 end
 zmp_pend(:,3) = delta_z_vrp*ones(length(zmp_pend),1);
-
+zmp_pend(end+1:end+int32(T_max/t_sample),:) = [zmp_pend(end,1) 0 zmp_pend(end,3)].*ones(int32(T_max/t_sample),3);
 [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample);
 
 function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, t_step, t_sample)
