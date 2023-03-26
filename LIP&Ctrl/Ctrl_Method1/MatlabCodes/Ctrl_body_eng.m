@@ -47,20 +47,21 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
-[r_vrp_, zmp_pend_, xi_ini_, xi_eos_] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, T_max, t_sample, mswg, msup, mpend, mfeet, m);
-[xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
+[r_vrp_, zmp_pend, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, T_max, t_sample, mswg, msup, mpend, mfeet, m);
 for ith = 1:N+2
-    b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
+    b_nom(ith,:) = (xi_eos(ith,:) - zmp_pend(ith*int32(T/t_sample)+1,:)); % ????????? bala ham hamintor
 end
-for ith = 1:N+1
-    b_nom_(ith,:) = (xi_eos_(ith,:) - zmp_pend_(ith*int32(T/t_sample)+1,:));
-end
-b_nom_(N+2,:) = [0 0 0];
+b_nom(N+2,:) = [0 0 0];
+
+% [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
+% for ith = 1:N+2
+%     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
+% end
 %% initial values
 % Sup leg initial pos
 u0 = [0 Lp/2]';
 u0x = u0(1); u0y = u0(2);
-zmp_pend = [0 0 Lp/2]';
+% zmp_pend = [0 0 Lp/2]';
 % IP initial pos & vel
 x0 = [xi_ini(1,1) xi_ini(1,2)]';
 V0 = [0 0]';
@@ -101,18 +102,19 @@ XI_ref_X_ = [];
 XI_ref_Y_ = [];
 
 ini_org(1) = 1; fnl_org(1) = Tnom/t_sample;
-for i = 2:N+2
+for i = 2:N+3
     ini_org(i) = (i-1)*(Tnom/t_sample) + (i-1);
     fnl_org(i) = ini_org(i) + (Tnom/t_sample);
+    if i==N+3
+       fnl_org(i) =  ini_org(i) + (T_max/t_sample);
+    end
 end
-ini_org(N+3) = fnl_org(N+2) + 1;
 ini = zeros(1,N+3);
-fnl = zeros(1,N+2);
+fnl = zeros(1,N+3);
 ini(1) = 1; 
 Step = 1; i = 1; q = 1; n = 0; s = 1; inc(s) = 0;
 qpresult = [0;0;0;0;0];
-init_time = t;
-final_time = T; F = 0;
+F = 0;
 %% control loop
 while Step(i) == 1
     s = s + 1;
@@ -128,19 +130,19 @@ while Step(i) == 1
     % time variable is the local time
     time = Tsim(q) + sum(Ts);
     
-    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
-    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
+%     xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
+%     xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
+%     
+%     xi_ref_X = [time xi_X]';
+%     xi_ref_Y = [time xi_Y]';
+%     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
+%     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
 
-    xi_X_ = zmp_pend_(ini_org(n+1)-1+q,1) + exp(omega*(t-T))*(zmp_pend_(ini_org(n+2)-1+q,1) + b_nom_(n+1,1) - zmp_pend_(ini_org(n+1)-1+q,1));
-    xi_Y_ = zmp_pend_(ini_org(n+1)-1+q,2) + exp(omega*(t-T))*(zmp_pend_(ini_org(n+2)-1+q,2) + b_nom_(n+1,2) - zmp_pend_(ini_org(n+1)-1+q,2));
-    
-    xi_ref_X = [time xi_X]';
-    xi_ref_Y = [time xi_Y]';
-    XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
-    XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
+    xi_X = zmp_pend(ini_org(n+1)-1+q,1) + exp(omega*(t-T))*(zmp_pend(ini_org(n+2)-1+q,1) + b_nom(n+1,1) - zmp_pend(ini_org(n+1)-1+q,1));
+    xi_Y = zmp_pend(ini_org(n+1)-1+q,2) + exp(omega*(t-T))*(zmp_pend(ini_org(n+2)-1+q,2) + b_nom(n+1,2) - zmp_pend(ini_org(n+1)-1+q,2));
 
-    XI_ref_X_ = horzcat(XI_ref_X_,[time xi_X_]');
-    XI_ref_Y_ = horzcat(XI_ref_Y_,[time xi_Y_]');
+    XI_ref_X_ = horzcat(XI_ref_X_,[time xi_X]');
+    XI_ref_Y_ = horzcat(XI_ref_Y_,[time xi_Y]');
         %% simulate IP with initial value (u0, x0, v0) of ith Step
     if q == 1
         sim('LIPM_Dynamicsx',[t_sample T_max]);
@@ -230,7 +232,7 @@ while Step(i) == 1
     inc(s) = floor(T/t_sample) - int32(Tnom/t_sample);
     for ith = n+1:N+2
         ini(ith+1:end) = ini_org(ith+1:end) + inc(s)*ones(1,N+3-ith);
-        fnl(ith:end) = fnl_org(ith:end) + inc(s)*ones(1,N+3-ith);
+        fnl(ith:end) = fnl_org(ith:end) + inc(s)*ones(1,N+4-ith);
     end  
     %% going next step
     t = t + t_sample;
@@ -242,7 +244,6 @@ while Step(i) == 1
         t = t_sample;
         t0 = 0;
         Ts(i) = T;
-        init_time = sum(Ts);
         i = i+1;
         Step(i) = 1;
         n = length(Step)-1;
@@ -276,69 +277,75 @@ while Step(i) == 1
     U0_y = horzcat(U0_y, u0_y);
     
     %% swg leg traj generation
-    final_time = T + sum(Ts);
-    if is_left
-        if mod(n+1,2) ~= 0
-            swingfootpos0 = r_f_l(n+1, :);
-            swingfootpos1 = r_f_l(n+2, :);
-        else
-            swingfootpos0 = r_f_r(n+1, :);
-            swingfootpos1 = r_f_r(n+2, :);
+    for ith = n+1:n+2
+        if ith == n+2 && n == N+1
+           zmp_pend(ini(ith):fnl(ith),1:2) = ones(fnl(ith)-ini(ith)+1,1)*[zmp_pend(end,1) r_vrp(end,2)];
+           break;
         end
-    else
-        if mod(n+1,2) ~= 0
-            swingfootpos0 = r_f_r(n+1, :);
-            swingfootpos1 = r_f_r(n+2, :);
+        init_time = ini(ith)*t_sample;
+        final_time = fnl(ith)*t_sample;
+        if is_left
+            if mod(ith,2) ~= 0
+                swingfootpos0 = r_f_l(ith, :);
+                swingfootpos1 = r_f_l(ith+1, :);
+            else
+                swingfootpos0 = r_f_r(ith, :);
+                swingfootpos1 = r_f_r(ith+1, :);
+            end
         else
-            swingfootpos0 = r_f_l(n+1, :);
-            swingfootpos1 = r_f_l(n+2, :);
+            if mod(ith,2) ~= 0
+                swingfootpos0 = r_f_r(ith, :);
+                swingfootpos1 = r_f_r(ith+1, :);
+            else
+                swingfootpos0 = r_f_l(ith, :);
+                swingfootpos1 = r_f_l(ith+1, :);
+            end
         end
-    end
-    
-    [qswing, dqswing, ddqswing] = getSwingFootTraj(swingfootpos0', swingfootpos1', swingHeight, ...
-                        init_time, final_time,t_sample);   
-    
-    swg_traj = [time qswing(:,q)' dqswing(:,q)' ddqswing(:,q)']';
-    SWG_traj = horzcat(SWG_traj,swg_traj);
-   
-    %% three mass parameters evaluation 
-    m_feet = [time; mswg*(qswing(1:2,q) -  [u0_x(2); u0_y(2)])*(g + ddqswing(3,q))...
-        - mswg*(ddqswing(1:2,q))*(qswing(3,q) - delta_z_vrp)];
-    M_FEET = horzcat(M_FEET, m_feet);
-    
-    zmp_feet = [time; m_feet(2:3)/(mfeet*g) + [u0_x(2); u0_y(2)]];
-    ZMP_FEET = horzcat(ZMP_FEET, zmp_feet);
-    
-    zmp_pend = [time; (m/mpend)*[u0_x(2); u0_y(2)] - (mfeet/mpend)*zmp_feet(2:3)];
-    ZMP_PEND = horzcat(ZMP_PEND, zmp_pend);
 
+        [qswing, dqswing, ddqswing] = getSwingFootTraj(swingfootpos0', swingfootpos1', swingHeight, ...
+                            init_time, final_time,t_sample);   
+
+        swg_traj(ini(ith):fnl(ith),:) = [qswing' dqswing' ddqswing'];
+%         SWG_traj = horzcat(SWG_traj,swg_traj);
+
+        %% three mass parameters evaluation 
+        m_feet(ini(ith):fnl(ith),:) = mswg*(qswing(1:2,:)' -  ones(length(qswing),1)*[r_vrp(ith,1) r_vrp(ith,2)]).*(g*ones(length(qswing),1) + ddqswing(3,:)')...
+            - mswg*(ddqswing(1:2,:)').*(qswing(3,:)' - delta_z_vrp*ones(length(qswing),1));
+%         M_FEET = horzcat(M_FEET, m_feet);
+
+        zmp_feet(ini(ith):fnl(ith),:) = m_feet(ini(ith):fnl(ith),:)/(mfeet*g) + ones(length(qswing),1)*[r_vrp(ith,1) r_vrp(ith,2)];
+%         ZMP_FEET = horzcat(ZMP_FEET, zmp_feet);
+
+        zmp_pend(ini(ith):fnl(ith),1:2) = (m/mpend)*ones(length(qswing),1)*[r_vrp(ith,1) r_vrp(ith,2)] - (mfeet/mpend)*zmp_feet(ini(ith):fnl(ith),:);
+%         ZMP_PEND = horzcat(ZMP_PEND, zmp_pend);
+    end
     %% measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
-    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), zmp_pend(2),0);
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), zmp_pend(ini(n+1)-1+q,1),0);
 
     k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
-    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, zmp_pend(2),0);
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, zmp_pend(ini(n+1)-1+q,1),0);
 
     k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
-    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, zmp_pend(2),0);
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, zmp_pend(ini(n+1)-1+q,1),0);
 
     k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
-    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, zmp_pend(2),0);
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, zmp_pend(ini(n+1)-1+q,1),0);
     
     k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
-    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), zmp_pend(3),F);
+    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), zmp_pend(ini(n+1)-1+q,2),F);
 
     k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
-    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, zmp_pend(3),F);
+    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, zmp_pend(ini(n+1)-1+q,2),F);
 
     k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
-    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, zmp_pend(3),F);
+    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, zmp_pend(ini(n+1)-1+q,2),F);
 
     k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
-    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, zmp_pend(3),F);
+    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, zmp_pend(ini(n+1)-1+q,2),F);
     
     % update values for time = 0.002
-    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-zmp_pend(2:3))+[0;-F/m]);
+    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-zmp_pend(ini(n+1)-1+q,1:2)')+[0;-F/m]);
     x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
     x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
     t0 = t0 + t_sample;
@@ -380,16 +387,16 @@ end
 % legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','swg_{y}','zmp_{feet}','zmp_{pend}') %,'P_{cZMP,y}'
 %%
 figure(3)
-plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
-plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
-plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-')
+% plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
+% plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
+% plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-')
 plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
 plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
 %%
 figure(4)
-plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
-plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
-plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
+% plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+% plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
+% plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
 plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
 plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
 %%
