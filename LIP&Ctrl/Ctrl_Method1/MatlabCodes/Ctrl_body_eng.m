@@ -47,15 +47,15 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
-[r_vrp_, zmp_pend_, xi_ini_, xi_eos_] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m);
+% [r_vrp_, zmp_pend_, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, t_sample, mswg, msup, mpend, mfeet, m);
 [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
 for ith = 1:N+2
     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
 end
-for ith = 1:N+1
-    b_nom_(ith,:) = (xi_eos_(ith,:) - zmp_pend_(ith*int32(T/t_sample)+1,:));
-end
-b_nom_(N+2,:) = [0 0 0];
+% for ith = 1:N+1
+%     b_nom(ith,:) = (xi_eos(ith,:) - zmp_pend_(ith*int32(T/t_sample)+1,:));
+% end
+% b_nom(N+2,:) = [0 0 0];
 %% initial values
 % Sup leg initial pos
 u0 = [0 Lp/2]';
@@ -97,47 +97,45 @@ M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
 
-Step = 1; i = 1; q = 1; n = 0;
+for i = 1:N+2
+    ini_org(i) = (i-1)*int32(Tnom/t_sample) + 1;
+    fnl_org(i) = i*int32(Tnom/t_sample);
+end
+ini = int32(zeros(1,N+2));
+fnl = ini;
+ini(1) = 1; 
+Step = 1; i = 1; q = 1; n = 0; s = 1; inc(s) = 0;
 qpresult = [0;0;0;0;0];
 init_time = t;
 final_time = T; F = 0;
 %% control loop
 while Step(i) == 1
-    
+    s = s + 1;
     % Disturbance insertation
 %     if n+1 == 3 && t <= 0.1
 %         F = 290; %Max 290 for 3Mass
 %     else
 %         F = 0;
 %     end
-    %% update pattern parameter
-    for j = n:N+1
-       r_vrp(j+2,1) = r_vrp(j+2,1) + qpresult(1);
-       r_vrp(j+2,2) = r_vrp(j+2,2) + qpresult(3);
-    end
+
+    %% regenerate DCM pattern 
     
-    if is_left
-        r_f_l = [1 1 0].*r_vrp;
-        r_f_r = [1 1 0].*r_vrp;
-        r_f_l(1,:) = [0 (Lp/2 + Wnom) 0];
-        r_f_l(3:2:N+3,:)=r_f_l(2:2:N+2,:);
-        r_f_r(2:2:N+3,:)=r_f_r(1:2:N+2,:);
-    else
-        r_f_r = [1 1 0].*r_vrp;
-        r_f_l = [1 1 0].*r_vrp;
-        r_f_r(1,:) = [0 -(Lp/2 + Wnom) 0];
-        r_f_r(3:2:N+3,:)=r_f_r(2:2:N+2,:);
-        r_f_l(2:2:N+3,:)=r_f_l(1:2:N+2,:);
-    end
+    % time variable is the local time
+    time = Tsim(q) + sum(Ts);
     
-    %% simulate IP with initial value (u0, x0, v0) of ith Step
+    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
+    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
+
+    xi_ref_X = [time xi_X]';
+    xi_ref_Y = [time xi_Y]';
+    XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
+    XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
+    
+        %% simulate IP with initial value (u0, x0, v0) of ith Step
     if q == 1
         sim('LIPM_Dynamicsx',[t_sample T_max]);
         sim('LIPM_Dynamicsy',[t_sample T_max]);
     end
-
-    % time variable is the local time
-    time = Tsim(q) + sum(Ts);
     
     % measured com and dcm of IP
     CoM_x = [time simoutx(q,1)]';
@@ -148,15 +146,6 @@ while Step(i) == 1
     zeta_mea_y = [time xi_meas_3Mass(2)]'; %simouty(q,2) xi_meas_3Mass(2)
     ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
     ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
-
-    %% regenerate DCM pattern 
-    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
-    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
-
-    xi_ref_X = [time xi_X]';
-    xi_ref_Y = [time xi_Y]';
-    XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
-    XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
     
     %% dcm error 
     zeta_err_x = [time xi_meas_3Mass(1)-xi_X]'; %simoutx(q,2) xi_meas_3Mass(1)
@@ -209,6 +198,30 @@ while Step(i) == 1
     UT_x = horzcat(UT_x, uT_x);
     UT_y = horzcat(UT_y, uT_y);
     
+    %% update pattern parameter
+    for j = n:N+1
+       r_vrp(j+2,1) = r_vrp(j+2,1) + qpresult(1);
+       r_vrp(j+2,2) = r_vrp(j+2,2) + qpresult(3);
+    end
+    
+    if is_left
+        r_f_l = [1 1 0].*r_vrp;
+        r_f_r = [1 1 0].*r_vrp;
+        r_f_l(1,:) = [0 (Lp/2 + Wnom) 0];
+        r_f_l(3:2:N+3,:)=r_f_l(2:2:N+2,:);
+        r_f_r(2:2:N+3,:)=r_f_r(1:2:N+2,:);
+    else
+        r_f_r = [1 1 0].*r_vrp;
+        r_f_l = [1 1 0].*r_vrp;
+        r_f_r(1,:) = [0 -(Lp/2 + Wnom) 0];
+        r_f_r(3:2:N+3,:)=r_f_r(2:2:N+2,:);
+        r_f_l(2:2:N+3,:)=r_f_l(1:2:N+2,:);
+    end
+    inc(s) = floor(T/t_sample) - int32(Tnom/t_sample);
+    for ith = n+1:N+2
+        ini(ith+1:end) = ini_org(ith+1:end) + int32(inc(s)*ones(1,N+2-ith));
+        fnl(ith:end) = fnl_org(ith:end) + int32(inc(s)*ones(1,N+3-ith));
+    end  
     %% going next step
     t = t + t_sample;
     
@@ -216,7 +229,7 @@ while Step(i) == 1
     [n T t]
     
     if t>T
-        t = 0;
+        t = t_sample;
         t0 = 0;
         Ts(i) = T;
         init_time = sum(Ts);
@@ -234,6 +247,9 @@ while Step(i) == 1
         u0y = Opt_Vector(2);
         u0 = [u0x u0y]';
         q = 0;
+        
+        ini_org = ini;
+        fnl_org = fnl;
     end
     
     %% check ending condition
