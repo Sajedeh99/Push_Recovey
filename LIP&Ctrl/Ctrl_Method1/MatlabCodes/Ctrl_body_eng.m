@@ -2,7 +2,7 @@ clear all; clc; close all;
 N = 2;
 is_left = false;
 
-Lp = 0.2;
+Lp = 0.2; 
 L_min0 = -0.5;
 W_min0 = 0.1; 
 L_max0 = 0.5;
@@ -47,24 +47,22 @@ r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
 
 %%
-[r_vrp_, zmp_pend, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, T, T_max, t_sample, mswg, msup, mpend, mfeet, m);
+[r_vrp_, zmp_pend, xi_ini, xi_eos] = input3Mass(is_left, Lp, Wnom, N, Lnom, delta_z_vrp, swingHeight, Tnom, T_max, t_sample, mswg, msup, mpend, mfeet, m);
 for ith = 1:N+2
-    b_nom(ith,:) = (xi_eos(ith,:) - zmp_pend(ith*int32(T/t_sample)+1,:)); % ????????? bala ham hamintor
+    b_nom(ith,:) = (xi_eos(ith,:) - zmp_pend(ith*int32(Tnom/t_sample)+1,:));
 end
-b_nom(N+2,:) = [0 0 0];
 
 % [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
 % for ith = 1:N+2
 %     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
 % end
 %% initial values
-% Sup leg initial pos
+% IP initial pos & vel
+% x0 = [xi_ini(1,1) xi_ini(1,2)]';
+% V0 = [0 0]';
 u0 = [0 Lp/2]';
 u0x = u0(1); u0y = u0(2);
-% zmp_pend = [0 0 Lp/2]';
-% IP initial pos & vel
-x0 = [xi_ini(1,1) xi_ini(1,2)]';
-V0 = [0 0]';
+% 3Mass IP initial pos & vel
 x0_3Mass = [xi_ini(1,1) xi_ini(1,2)]';
 V0_3Mass = [0 0]';
 xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
@@ -74,16 +72,20 @@ U0_y = [];
 % Swg leg final destination pos array 
 UT_x = [];
 UT_y = [];
+SWG_traj = [];
+M_FEET = [];
+ZMP_FEET = [];
+ZMP_PEND = [];
 % CoM pos array
 CoMx = [];
 CoMy = [];
 CoMx_3Mass = [];
 CoMy_3Mass = [];
-PcZMP_Y = [];
-PcZMP_X = [];
 % reference DCM array
 XI_ref_X = [];
 XI_ref_Y = [];
+XI_ref_X_ = [];
+XI_ref_Y_ = [];
 % measured DCM array
 ZETA_mea_x = [];
 ZETA_mea_y = [];
@@ -92,14 +94,9 @@ ZETA_mea_y_3Mass = [];
 % DCM error array
 ZETA_err_x = [];
 ZETA_err_y = [];
-% SWG Trajectory
-SWG_traj = [];
-M_FEET = [];
-ZMP_FEET = [];
-ZMP_PEND = [];
 
-XI_ref_X_ = [];
-XI_ref_Y_ = [];
+PcZMP_Y = [];
+PcZMP_X = [];
 
 ini_org(1) = 1; fnl_org(1) = Tnom/t_sample;
 for i = 2:N+3
@@ -111,7 +108,8 @@ for i = 2:N+3
 end
 ini = zeros(1,N+3);
 fnl = zeros(1,N+3);
-ini(1) = 1; 
+ini(1) = 1;
+
 Step = 1; i = 1; q = 1; n = 0; s = 1; inc(s) = 0;
 qpresult = [0;0;0;0;0];
 F = 0;
@@ -141,19 +139,19 @@ while Step(i) == 1
     xi_X = zmp_pend(ini_org(n+1)-1+q,1) + exp(omega*(t-T))*(zmp_pend(ini_org(n+2)-1+q,1) + b_nom(n+1,1) - zmp_pend(ini_org(n+1)-1+q,1));
     xi_Y = zmp_pend(ini_org(n+1)-1+q,2) + exp(omega*(t-T))*(zmp_pend(ini_org(n+2)-1+q,2) + b_nom(n+1,2) - zmp_pend(ini_org(n+1)-1+q,2));
 
-    XI_ref_X_ = horzcat(XI_ref_X_,[time xi_X]');
-    XI_ref_Y_ = horzcat(XI_ref_Y_,[time xi_Y]');
+    XI_ref_X = horzcat(XI_ref_X,[time xi_X]');
+    XI_ref_Y = horzcat(XI_ref_Y,[time xi_Y]');
         %% simulate IP with initial value (u0, x0, v0) of ith Step
-    if q == 1
-        sim('LIPM_Dynamicsx',[t_sample T_max]);
-        sim('LIPM_Dynamicsy',[t_sample T_max]);
-    end
+%     if q == 1
+%         sim('LIPM_Dynamicsx',[t_sample T_max]);
+%         sim('LIPM_Dynamicsy',[t_sample T_max]);
+%     end
     
     % measured com and dcm of IP
-    CoM_x = [time simoutx(q,1)]';
-    CoM_y = [time simouty(q,1)]';
-    CoMx = horzcat(CoMx,CoM_x);
-    CoMy = horzcat(CoMy,CoM_y);
+%     CoM_x = [time simoutx(q,1)]';
+%     CoM_y = [time simouty(q,1)]';
+%     CoMx = horzcat(CoMx,CoM_x);
+%     CoMy = horzcat(CoMy,CoM_y);
     zeta_mea_x = [time xi_meas_3Mass(1)]'; %simoutx(q,2) xi_meas_3Mass(1)
     zeta_mea_y = [time xi_meas_3Mass(2)]'; %simouty(q,2) xi_meas_3Mass(2)
     ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
@@ -230,7 +228,7 @@ while Step(i) == 1
         r_f_l(2:2:N+3,:)=r_f_l(1:2:N+2,:);
     end
     inc(s) = floor(T/t_sample) - int32(Tnom/t_sample);
-    for ith = n+1:N+2
+    for ith = n+1:N+3
         ini(ith+1:end) = ini_org(ith+1:end) + inc(s)*ones(1,N+3-ith);
         fnl(ith:end) = fnl_org(ith:end) + inc(s)*ones(1,N+4-ith);
     end  
@@ -248,10 +246,10 @@ while Step(i) == 1
         Step(i) = 1;
         n = length(Step)-1;
         % initial x0 & v0 for IP in next step
-        x0 = [CoM_x(2) CoM_y(2)]';
-        term1 = [simoutx(q,2), simouty(q,2)];
-        term2 = [simoutx(q,1), simouty(q,1)];
-        V0 = omega*(term1-term2);
+%         x0 = [CoM_x(2) CoM_y(2)]';
+%         term1 = [simoutx(q,2), simouty(q,2)];
+%         term2 = [simoutx(q,1), simouty(q,1)];
+%         V0 = omega*(term1-term2);
         
         % new Sup leg pos = last Swg leg destination pos
         u0x = Opt_Vector(1);
