@@ -27,7 +27,7 @@ omega = sqrt(g/delta_z_vrp);
 % time
 global t_sample
 t_sample = 0.001;
-t = 0; t0 = 0; T = Tnom; Ts = 0; Tsim = [0:t_sample:T_max];
+t = t_sample; t0 = 0; T = Tnom; Ts = 0;
 
 %%
 if is_left
@@ -100,12 +100,20 @@ PcZMP_X = [];
 
 ini_org(1) = 1; fnl_org(1) = Tnom/t_sample;
 for i = 2:N+3
-    ini_org(i) = (i-1)*(Tnom/t_sample) + (i-1);
-    fnl_org(i) = ini_org(i) + (Tnom/t_sample);
+    ini_org(i) = fnl_org(i-1) + 1;
+    fnl_org(i) = i*(Tnom/t_sample);
     if i==N+3
-       fnl_org(i) =  ini_org(i) + (T_max/t_sample);
+       fnl_org(i) =  i*(Tnom/t_sample)+((T_max-Tnom)/t_sample);
     end
 end
+
+% for i = 2:N+3
+%     ini_org(i) = (i-1)*(Tnom/t_sample) + (i-1);
+%     fnl_org(i) = ini_org(i) + (Tnom/t_sample);
+%     if i==N+3
+%        fnl_org(i) =  ini_org(i) + (T_max/t_sample);
+%     end
+% end
 ini = zeros(1,N+3);
 fnl = zeros(1,N+3);
 ini(1) = 1;
@@ -242,7 +250,7 @@ while Step(i) == 1
     t = t + t_sample;
     
     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
-    [n T t]
+    [n T t q]
     
     if t>T
         t = t_sample;
