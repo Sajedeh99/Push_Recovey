@@ -73,7 +73,7 @@ for ith = 1:N+2
     end
 end
 zmp_pend(:,3) = delta_z_vrp*ones(length(zmp_pend),1);
-zmp_pend(end+1:end+int32(T_max/t_sample),:) = [zmp_pend(end,1) r_vrp(end,2) zmp_pend(end,3)].*ones(int32(T_max/t_sample),3);
+zmp_pend(end+1,:) = [zmp_pend(end,1) r_vrp(end,2) zmp_pend(end,3)];
 [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample ,r_vrp);
 
 function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, t_step, t_sample, r_vrp)
