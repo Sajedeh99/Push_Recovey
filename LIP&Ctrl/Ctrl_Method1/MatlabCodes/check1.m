@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 5;
+N = 8;
 is_left = false;
 
 Lp = 0.2; 
@@ -111,7 +111,7 @@ while Step(i) == 1
 
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 350; %Max 290 for 3Mass
+        F = 50; %Max 290 for 3Mass
     else
         F = 0;
     end
