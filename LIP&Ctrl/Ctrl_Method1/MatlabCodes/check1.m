@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 15;
+N = 5;
 is_left = false;
 
 Lp = 0.2; 
@@ -110,11 +110,11 @@ while Step(i) == 1
     s = s + 1;
 
     % Disturbance insertation
-%     if n+1 == 3 && t <= 0.1
-%         F = 290; %Max 290 for 3Mass
-%     else
-%         F = 0;
-%     end
+    if n+1 == 3 && t <= 0.1
+        F = 340; %Max 290 for 3Mass
+    else
+        F = 0;
+    end
 
     %% regenerate DCM pattern 
     xi_X = zmp_pend(ini(n+1)-1+q,1) + exp(omega*(t-T))*(zmp_pend(ini(n+2),1) + b_nom(n+1,1) - zmp_pend(ini(n+1)-1+q,1));
