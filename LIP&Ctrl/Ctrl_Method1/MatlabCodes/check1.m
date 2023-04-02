@@ -111,7 +111,7 @@ while Step(i) == 1
 
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 340; %Max 290 for 3Mass
+        F = 350; %Max 290 for 3Mass
     else
         F = 0;
     end
