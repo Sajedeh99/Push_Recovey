@@ -3,12 +3,12 @@ g = 9.807;
 omega = sqrt(g/delta_z_vrp);
 if is_left
     foot_plants = [0 -(Lp/2 + Wnom) 0];
-    for i=2:N+2
+    for i=2:N+3
         foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i)*(Lp/2 + Wnom) 0];
     end
 else
     foot_plants = [0 (Lp/2 + Wnom) 0];
-    for i=2:N+2
+    for i=2:N+3
         foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i-1)*(Lp/2 + Wnom) 0];
     end
 end
@@ -30,7 +30,7 @@ else
     r_f_r(3:2:N+3,:)=r_f_r(2:2:N+2,:);
     r_f_l(2:2:N+3,:)=r_f_l(1:2:N+2,:);
 end
-for ith = 1:N+2
+for ith = 1:N+3
     indx =  (T*(ith-1)/t_sample);
         
     endtime = T/t_sample;
@@ -73,16 +73,17 @@ for ith = 1:N+2
     end
 end
 zmp_pend(:,3) = delta_z_vrp*ones(length(zmp_pend),1);
-zmp_pend(end+1,:) = [zmp_pend(end,1) r_vrp(end,2) zmp_pend(end,3)];
-[xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample ,r_vrp);
 
-function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, t_step, t_sample, r_vrp)
+[xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample);
+
+zmp_pend = zmp_pend(1:(N+2)*(T/t_sample)+1,:)
+function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample)
 xi_eos = zeros(N+2,3);
-xi_eos(N+2,:) = [zmp_pend(end,1) r_vrp(end,2) zmp_pend(end,3)];
+xi_eos(N+2,:) = [zmp_pend((N+2)*T/t_sample+1,1) zmp_pend((N+2)*T/t_sample+1,2) zmp_pend((N+2)*T/t_sample+1,3)];
 for k = N+1:-1:1
-        xi_eos(k,:) = zmp_pend(k*int32(t_step/t_sample)+1,:) + (exp(-omega*t_step))*(xi_eos(k+1,:)-zmp_pend(k*int32(t_step/t_sample)+1,:));
+        xi_eos(k,:) = zmp_pend(k*int32(T/t_sample)+1,:) + (exp(-omega*T))*(xi_eos(k+1,:)-zmp_pend(k*int32(T/t_sample)+1,:));
         xi_ini(k+1,:) = xi_eos(k,:);
 end
-xi_ini(1,:) = zmp_pend(k*int32(t_step/t_sample),:) + (exp(-omega*t_step))*(xi_eos(k,:)-zmp_pend(k*int32(t_step/t_sample),:));
+xi_ini(1,:) = zmp_pend(k*int32(T/t_sample),:) + (exp(-omega*T))*(xi_eos(k,:)-zmp_pend(k*int32(T/t_sample),:));
 end
 end

@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 5;
+N = 8;
 is_left = false;
 
 Lp = 0.2; 
@@ -32,12 +32,12 @@ t = t_sample; t0 = 0; T = Tnom; Ts = 0;
 %%
 if is_left
     foot_plants = [0 -(Lp/2 + Wnom) 0];
-    for i=2:N+2
+    for i=2:N+3
         foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i)*(Lp/2 + Wnom) 0];
     end
 else
     foot_plants = [0 (Lp/2 + Wnom) 0];
-    for i=2:N+2
+    for i=2:N+3
         foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i-1)*(Lp/2 + Wnom) 0];
     end
 end
@@ -52,14 +52,7 @@ for ith = 1:N+2
     b_nom(ith,:) = (xi_eos(ith,:) - zmp_pend(ith*int32(Tnom/t_sample)+1,:));
 end
 
-% [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom);
-% for ith = 1:N+2
-%     b_nom(ith,:) = (xi_eos(ith,:) - r_vrp(ith+1,:));
-% end
 %% initial values
-% IP initial pos & vel
-% x0 = [xi_ini(1,1) xi_ini(1,2)]';
-% V0 = [0 0]';
 u0 = [0 Lp/2]';
 u0x = u0(1); u0y = u0(2);
 % 3Mass IP initial pos & vel
@@ -232,7 +225,7 @@ while Step(i) == 1
     U0_y = horzcat(U0_y, u0_y);
     
     %% update pattern parameter
-    for j = n:N+1
+    for j = n:N+2
        r_vrp(j+2,1) = r_vrp(j+2,1) + qpresult(1);
        r_vrp(j+2,2) = r_vrp(j+2,2) + qpresult(3);
     end
@@ -289,10 +282,6 @@ while Step(i) == 1
     
     %% swg leg traj generation
     for ith = n+1:n+2 % calculate zmp_pend for current step and next step
-        if ith == n+2 && n == N+1
-           zmp_pend(ini(ith),1:2) = [zmp_pend(end,1) r_vrp(end,2)];
-           break;
-        end
         init_time = ini(ith)*t_sample;
         final_time = fnl(ith)*t_sample;
         if is_left
