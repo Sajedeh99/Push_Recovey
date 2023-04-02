@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 8;
+N = 10;
 is_left = false;
 
 Lp = 0.2; 
@@ -111,7 +111,7 @@ while Step(i) == 1
 
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 50; %Max 290 for 3Mass
+        F = 100; %Max 290 for 3Mass
     else
         F = 0;
     end
@@ -332,7 +332,7 @@ plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-','linewidth',1.5)
 legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','zmp_{pend}') %'P_{cZMP,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','swg_{x}','swg_{z}','zmp_{feet}',
 %%
 figure(2)
-plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
+plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','r','linewidth',1.5);hold on;
 plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',1.5);hold on;
 plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',1.5);hold on;
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',1.5);hold on;
