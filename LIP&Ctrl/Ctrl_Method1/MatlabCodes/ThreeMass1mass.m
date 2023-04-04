@@ -12,8 +12,8 @@ T_max = 1;
 Vx = 0.5;
 Vy = 0.0;
 
-msup = 3;
-mswg = 3;
+msup = 0;
+mswg = 0;
 mpend = 54;
 mfeet = 6;
 m = 60;
@@ -119,7 +119,7 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 290; %Max 290 for 3Mass
+        F = 310; %Max 290 for 3Mass
     else
         F = 0;
     end
