@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 7;
+N = 6;
 is_left = false;
 
 Lp = 0.2; 
@@ -9,7 +9,7 @@ L_max0 = 0.5;
 W_max0 = 0.4;
 T_min = 0.3;
 T_max = 1;
-Vx = 0.5;
+Vx = 0.8;
 Vy = 0.0;
 
 msup = 3;
@@ -96,12 +96,12 @@ ZETA_err_y = [];
 PcZMP_Y = [];
 PcZMP_X = [];
 
-ini_org(1) = 1; fnl_org(1) = Tnom/t_sample;
+ini_org(1) = int32(1); fnl_org(1) = int32(Tnom/t_sample);
 for i = 2:N+3
     ini_org(i) = fnl_org(i-1) + 1;
-    fnl_org(i) = i*(Tnom/t_sample);
+    fnl_org(i) = i*int32(Tnom/t_sample);
     if i==N+3
-       fnl_org(i) =  i*(Tnom/t_sample)+((T_max-Tnom)/t_sample);
+       fnl_org(i) =  i*int32(Tnom/t_sample)+(int32(T_max-Tnom)/t_sample);
     end
 end
 ini = ini_org;
@@ -117,7 +117,7 @@ while Step(i) == 1
 
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 340; %Max 290 for 1 Mass path generaton
+        F = 120; %Max 290 for 1 Mass path generaton
     else
         F = 0;
     end
@@ -255,8 +255,8 @@ while Step(i) == 1
     end
     inc(s) = floor(T/t_sample) - int32(Tnom/t_sample);
     for ith = n+1:N+3
-        ini(ith+1:end) = ini_org(ith+1:end) + inc(s)*ones(1,N+3-ith);
-        fnl(ith:end) = fnl_org(ith:end) + inc(s)*ones(1,N+4-ith);
+        ini(ith+1:end) = ini_org(ith+1:end) + int32(inc(s)*ones(1,N+3-ith));
+        fnl(ith:end) = fnl_org(ith:end) + int32(inc(s)*ones(1,N+4-ith));
     end  
     %% going next step
     t = t + t_sample;
@@ -292,8 +292,8 @@ while Step(i) == 1
     
     %% swg leg traj generation
     for ith = n+1:n+2 % calculate zmp_pend for current step and next step
-        init_time = ini(ith)*t_sample;
-        final_time = fnl(ith)*t_sample;
+        init_time = double(ini(ith))*t_sample;
+        final_time = double(fnl(ith))*t_sample;
         if is_left
             if mod(ith,2) ~= 0
                 swingfootpos0 = r_f_l(ith, :);
