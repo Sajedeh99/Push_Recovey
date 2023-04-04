@@ -1,11 +1,13 @@
 function [Tnom,Lnom,Wnom,tau_nom]=Param_fcn(L_min,L_max,W_min,W_max,T_min,T_max,w0,Vx,Vy)
 
-Bl1=L_min/abs(Vx);
-Bu1=L_max/abs(Vx);
-Bl2=W_min/abs(Vy);
-Bu2=W_max/abs(Vy);
+Bl1=round(L_min/abs(Vx),1);
+Bl2=round(W_min/abs(Vy),1);
 Bl3=T_min;
+
+Bu1=round(L_max/abs(Vx),1);
+Bu2=round(W_max/abs(Vy),1);
 Bu3=T_max;
+
 if Vx==0
     Bl=max(Bl2,Bl3);
     Bu=min(Bu2,Bu3);

@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N =7;
+N =5;
 is_left = false;
 
 Lp = 0.2;
@@ -9,11 +9,11 @@ L_max0 = 0.5;
 W_max0 = 0.4;
 T_min = 0.3;
 T_max = 1;
-Vx = 0.5;
+Vx = 0.6;
 Vy = 0.0;
 
-msup = 0;
-mswg = 0;
+msup = 3;
+mswg = 3;
 mpend = 54;
 mfeet = 6;
 m = 60;
@@ -94,12 +94,12 @@ SWG_traj = [];
 M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
-ini_org(1) = 1; fnl_org(1) = Tnom/t_sample;
+ini_org(1) = int32(1); fnl_org(1) = int32(Tnom/t_sample);
 for i = 2:N+3
     ini_org(i) = fnl_org(i-1) + 1;
-    fnl_org(i) = i*(Tnom/t_sample);
+    fnl_org(i) = i*int32(Tnom/t_sample);
     if i==N+3
-       fnl_org(i) =  i*(Tnom/t_sample)+((T_max-Tnom)/t_sample);
+       fnl_org(i) =  i*int32(Tnom/t_sample)+(int32(T_max-Tnom)/t_sample);
     end
 end
 ini = ini_org;
@@ -119,7 +119,7 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 310; %Max 290 for 3Mass
+        F = 280; %Max 290 for 3Mass
     else
         F = 0;
     end
@@ -247,8 +247,8 @@ while Step(i) == 1
     end
     inc(s) = floor(T/t_sample) - int32(Tnom/t_sample);
     for ith = n+1:N+3
-        ini(ith+1:end) = ini_org(ith+1:end) + inc(s)*ones(1,N+3-ith);
-        fnl(ith:end) = fnl_org(ith:end) + inc(s)*ones(1,N+4-ith);
+        ini(ith+1:end) = ini_org(ith+1:end) + int32(inc(s)*ones(1,N+3-ith));
+        fnl(ith:end) = fnl_org(ith:end) + int32(inc(s)*ones(1,N+4-ith));
     end
     if is_left
         r_f_l = [1 1 0].*r_vrp;
@@ -295,8 +295,8 @@ while Step(i) == 1
         u0y = Opt_Vector(2);
         u0 = [u0x u0y]';
         q = 0;
-%         ini_org = ini;
-%         fnl_org = fnl;
+        ini_org = ini;
+        fnl_org = fnl;
     end
     
     if n == N+2 % N
@@ -312,8 +312,8 @@ while Step(i) == 1
     
     %% swg leg traj generation
     for ith = n+1:n+2 % calculate zmp_pend for current step and next step
-        init_time = ini(ith)*t_sample;
-        final_time = fnl(ith)*t_sample;
+        init_time = double(ini(ith))*t_sample;
+        final_time = double(fnl(ith))*t_sample;
         if is_left
             if mod(ith,2) ~= 0
                 swingfootpos0 = r_f_l(ith, :);
@@ -397,12 +397,13 @@ plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-');hold on;
 plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
 
 figure(4)
+plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-');hold on;
+plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
+plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
 plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
-plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
-plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
-plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-');hold on;
-plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
+% plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
+legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}') %,'P_{cZMP,y}','swg_{y}','zmp_{feet}','zmp_{pend}'
 
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
