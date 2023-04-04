@@ -55,7 +55,7 @@ for ith = 1:N+3
     end
     [qswing, dqswing, ddqswing] = getSwingFootTraj(swingfootpos0', swingfootpos1', swingHeight, ...
                         init_time, final_time,t_sample);
-    swing_traj(indx+1:indx+endtime,:) = [qswing', dqswing', ddqswing'];
+    swing_traj(int32(indx)+1:int32(indx)+int32(endtime),:) = [qswing', dqswing', ddqswing'];
     for j = 1:endtime
         p_ref(int32(indx+j),:) = r_vrp(ith,:);
         
@@ -76,7 +76,7 @@ zmp_pend(:,3) = delta_z_vrp*ones(length(zmp_pend),1);
 
 [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample);
 
-zmp_pend = zmp_pend(1:(N+2)*(T/t_sample)+1,:);
+% zmp_pend = zmp_pend(1:(N+2)*(T/t_sample)+1,:);
 function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample)
 xi_eos = zeros(N+2,3);
 xi_eos(N+2,:) = [zmp_pend((N+2)*int32(T/t_sample)+1,1) zmp_pend((N+2)*int32(T/t_sample)+1,2) zmp_pend((N+2)*int32(T/t_sample)+1,3)];
