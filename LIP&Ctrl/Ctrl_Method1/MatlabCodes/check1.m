@@ -117,7 +117,7 @@ while Step(i) == 1
 
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 120; %Max 290 for 1 Mass path generaton
+        F = 260; %Max 290 for 1 Mass path generaton
     else
         F = 0;
     end
