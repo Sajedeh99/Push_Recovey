@@ -115,7 +115,7 @@ while Step(i) == 1
     else
         F = 0;
     end
-    
+     
     % regenerate DCM pattern 
     xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
     xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
@@ -133,55 +133,13 @@ while Step(i) == 1
     xi_ref_Y = [time xi_Y]';
     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
-    %% measured com and dcm of 3Mass IP
-    k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
-    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1),0);
-
-    k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
-    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1),0);
-
-    k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
-    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1),0);
-
-    k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
-    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1),0);
     
-    k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
-    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2),F);
-
-    k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
-    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, u0(2),F);
-
-    k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
-    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, u0(2),F);
-
-    k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
-    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, u0(2),F);
-    
-    % update values for time = 0.002
-    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-u0)+[0;-F/m]);
-    x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
-    x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
-    t0 = t0 + t_sample;
-
-    % calculate com and dcm for time = 0.001
-    CoM_x_3Mass = [time x0_3Mass(1)]';
-    CoM_y_3Mass = [time x0_3Mass(2)]';
-    CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
-    CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
-    
-    xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
-    ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,[time xi_meas_3Mass(1)]');
-    ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,[time xi_meas_3Mass(2)]');
-
-
     %% dcm error 
     zeta_err_x = [time xi_meas_3Mass(1)-xi_X]'; % xi_meas_3Mass(1)
     zeta_err_y = [time xi_meas_3Mass(2)-xi_Y]'; % xi_meas_3Mass(2)
     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
-    ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y);
+    ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y); 
     
-    % update QP constraint parameters 
     PcZMP_y(q,n+1) = -(exp(omega*(T-t+0.005)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.005)));
     PcZMP_x(q,n+1) = -(exp(omega*(T-t+0.005)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.005)));
     
@@ -202,6 +160,48 @@ while Step(i) == 1
     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
     
+    %% measured com and dcm of 3Mass IP
+    k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1)+PcZMP_x(q,n+1),0);
+
+    k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1)+PcZMP_x(q,n+1),0);
+
+    k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1)+PcZMP_x(q,n+1),0);
+
+    k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1)+PcZMP_x(q,n+1),0);
+    
+    k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
+    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2)+PcZMP_y(q,n+1),F);
+
+    k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
+    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, u0(2)+PcZMP_y(q,n+1),F);
+
+    k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
+    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, u0(2)+PcZMP_y(q,n+1),F);
+
+    k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
+    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, u0(2)+PcZMP_y(q,n+1),F);
+    
+    % update values for time = 0.002
+    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-(u0+[PcZMP_x(q,n+1);PcZMP_y(q,n+1)]))+[0;-F/m]);
+    x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
+    x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
+    t0 = t0 + t_sample;
+
+    % calculate com and dcm for time = 0.001
+    CoM_x_3Mass = [time x0_3Mass(1)]';
+    CoM_y_3Mass = [time x0_3Mass(2)]';
+    CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
+    CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
+    
+    xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
+    ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,[time xi_meas_3Mass(1)]');
+    ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,[time xi_meas_3Mass(2)]');
+
+    % update QP constraint parameters    
     L_min = u0(1) - .5;
     L_max = u0(1) + .5;
     if mod(n,2) == 0
@@ -215,7 +215,7 @@ while Step(i) == 1
     % QP
     [qpresult, Opt_Vector] = controller_eng(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
           b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
-          zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)); %PcZMP_y(q,n+1), PcZMP_x(q,n+1)
+          [0 0], [0 0], 0, 0); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
 
     T = (1/omega)*log(Opt_Vector(3));
     % update pattern parameter
