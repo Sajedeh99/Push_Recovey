@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N =3;
+N =10;
 is_left = false;
 
 Lp = 0.2;
@@ -111,7 +111,7 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 90; %Max 290 for 3Mass
+        F = 410; %Max 290 for 3Mass
     else
         F = 0;
     end
@@ -140,8 +140,8 @@ while Step(i) == 1
     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
     ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y); 
     
-    PcZMP_y(q,n+1) = -(exp(omega*(T-t+0.005)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.005)));
-    PcZMP_x(q,n+1) = -(exp(omega*(T-t+0.005)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.005)));
+    PcZMP_y(q,n+1) = -(exp(omega*(T-t+0.08)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.08)));
+    PcZMP_x(q,n+1) = -(exp(omega*(T-t+0.08)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.08)));
     
     if abs(PcZMP_y(q,n+1)) >= 0.04
        if  PcZMP_y(q,n+1) > 0
@@ -215,7 +215,7 @@ while Step(i) == 1
     % QP
     [qpresult, Opt_Vector] = controller_eng(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
           b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
-          [0 0], [0 0], 0, 0); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
+          zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
 
     T = (1/omega)*log(Opt_Vector(3));
     % update pattern parameter
