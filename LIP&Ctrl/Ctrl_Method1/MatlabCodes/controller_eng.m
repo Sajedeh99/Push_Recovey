@@ -3,7 +3,7 @@ function [qpresult, Opt_Vector]=controller_eng(t, T, Lnom, Wnom, L_min, L_max, W
 
 Wux = 1; %0.9
 Wuy = 1; %0.9
-WT = 0.05; %0.01
+WT = 0.05;
 Wbx = 5;
 Wby = 5;
 
