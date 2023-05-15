@@ -284,7 +284,6 @@ while Step(i) == 1
     u0_y = [t + sum(Ts) u0y]';
     U0_x = horzcat(U0_x, u0_x);
     U0_y = horzcat(U0_y, u0_y);
-    
 
 end
 %% plot result
