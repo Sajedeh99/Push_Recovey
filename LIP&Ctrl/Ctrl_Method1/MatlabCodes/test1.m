@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N =10;
+N = 4;
 is_left = false;
 
 Lp = 0.2;
@@ -105,34 +105,48 @@ qpresult = [0;0;0;0;0];
 % init_time = t;
 % final_time = T;
 F = 0;
+
+xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
+xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
+
+x_com(1,:) = [xi_ini(1,1) xi_ini(1,2)];
+com_dot = [0, 0];
 %% control loop
 while Step(i) == 1
 
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 410; %Max 290 for 3Mass
+        Fy = 0; % max 85 
+        Fx = 340; % max 170
     else
-        F = 0;
+        Fy = 0;
+        Fx = 0;
     end
-     
-    % regenerate DCM pattern 
-    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
-    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
     
     % time variable is the local time
     time = Tsim(q) + sum(Ts);
     
-    zeta_mea_x = [time xi_meas_3Mass(1)]';
-    zeta_mea_y = [time xi_meas_3Mass(2)]';
-    ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
-    ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
-    
-    %% reference dcm
+    %% reference dcm and com
     xi_ref_X = [time xi_X]';
     xi_ref_Y = [time xi_Y]';
     XI_ref_X = horzcat(XI_ref_X,xi_ref_X);
     XI_ref_Y = horzcat(XI_ref_Y,xi_ref_Y);
+    
+    x_com(s,:) = x_com(s-1,:) - t_sample*omega*(x_com(s-1,:) - [xi_X xi_Y]);
+    
+    % regenerate DCM pattern 
+    xi_X = r_vrp(n+1,1) + exp(omega*(t-T))*(r_vrp(n+2,1) + b_nom(n+1,1) - r_vrp(n+1,1));
+    xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,2));
+    
+    com_dot(s, :) = (omega) * ([xi_X xi_Y] - x_com(s,:)); %  (omega^2) was wrong
+
+    % measured DCM pattern 
+    zeta_mea_x = [time xi_meas_3Mass(1)]';
+    zeta_mea_y = [time xi_meas_3Mass(2)]';
+    ZETA_mea_x = horzcat(ZETA_mea_x,zeta_mea_x);
+    ZETA_mea_y = horzcat(ZETA_mea_y,zeta_mea_y);
+
     
     %% dcm error 
     zeta_err_x = [time xi_meas_3Mass(1)-xi_X]'; % xi_meas_3Mass(1)
@@ -162,31 +176,31 @@ while Step(i) == 1
     
     %% measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
-    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1)+PcZMP_x(q,n+1),0);
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), u0(1)+PcZMP_x(q,n+1),Fx);
 
     k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
-    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1)+PcZMP_x(q,n+1),0);
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, u0(1)+PcZMP_x(q,n+1),Fx);
 
     k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
-    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1)+PcZMP_x(q,n+1),0);
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, u0(1)+PcZMP_x(q,n+1),Fx);
 
     k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
-    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1)+PcZMP_x(q,n+1),0);
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, u0(1)+PcZMP_x(q,n+1),Fx);
     
     k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
-    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2)+PcZMP_y(q,n+1),F);
+    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), u0(2)+PcZMP_y(q,n+1),Fy);
 
     k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
-    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, u0(2)+PcZMP_y(q,n+1),F);
+    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, u0(2)+PcZMP_y(q,n+1),Fy);
 
     k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
-    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, u0(2)+PcZMP_y(q,n+1),F);
+    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, u0(2)+PcZMP_y(q,n+1),Fy);
 
     k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
-    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, u0(2)+PcZMP_y(q,n+1),F);
+    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, u0(2)+PcZMP_y(q,n+1),Fy);
     
     % update values for time = 0.002
-    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-(u0+[PcZMP_x(q,n+1);PcZMP_y(q,n+1)]))+[0;-F/m]);
+    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-(u0+[PcZMP_x(q,n+1);PcZMP_y(q,n+1)]))+[-Fx/m;-Fy/m]);
     x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
     x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
     t0 = t0 + t_sample;
@@ -215,7 +229,7 @@ while Step(i) == 1
     % QP
     [qpresult, Opt_Vector] = controller_eng(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
           b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
-          zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
+          [0 0], [0 0], 0, 0); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
 
     T = (1/omega)*log(Opt_Vector(3));
     % update pattern parameter
@@ -275,23 +289,30 @@ while Step(i) == 1
 end
 %% plot result
 figure(1)
-plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','g','linewidth',2);hold on;
-plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','-');hold on;
-plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','m','linewidth',2);hold on;
-plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
+plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
+plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
+plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
+plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','g','linewidth',2);hold on;
 plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
+plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
 plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
-legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,meas}','u_{T,x}','u_{0,x}','P_{cZMP,x}') 
+legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,ref}','x_{com,meas}','u_{0,x}','u_{T,x}','P_{cZMP,x} + u_{0,x}') 
+xlabel('time(s)');
+ylabel('position_{x} (m)');
+grid on
 
 figure(2)
-plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','-');hold on;
-plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','g','linewidth',2);hold on;
-plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','m','linewidth',2);hold on;
-plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
+plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
+plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
+plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','g','linewidth',2);hold on;
 plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
+plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
-legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,meas}','u_{T,y}','u_{0,y}','P_{cZMP,y}')
-
+legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}')
+xlabel('time(s)');
+ylabel('position_{y} (m)');
+grid on
 %functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
 xi_eos = zeros(N+2,3);
