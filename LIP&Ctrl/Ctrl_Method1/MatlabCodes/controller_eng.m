@@ -1,8 +1,8 @@
 function [qpresult, Opt_Vector]=controller_eng(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
     bx_nom, by_nom, w0, zeta_mea_x, zeta_mea_y, uTx_ref, uTy_ref, zeta_err_x, zeta_err_y, PcZMP_y, PcZMP_x)
 
-Wux = 1; %0.9
-Wuy = 1; %0.9
+Wux = 1;
+Wuy = 1;
 WT = 0.05;
 Wbx = 5;
 Wby = 5;
