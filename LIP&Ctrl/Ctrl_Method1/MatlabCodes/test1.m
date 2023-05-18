@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 10;
+N = 6;
 is_left = false;
 
 Lp = 0.2;
@@ -120,8 +120,8 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        Fy = 170; % max 85 
-        Fx = 0; % max 170
+        Fy = 170; % max 85  700
+        Fx = 0; % max 170   -1250
     else
         Fy = 0;
         Fx = 0;
@@ -254,7 +254,7 @@ while Step(i) == 1
     uT_y = [t + sum(Ts) Opt_Vector(2)]';
     UT_x = horzcat(UT_x, uT_x);
     UT_y = horzcat(UT_y, uT_y);
-    UT_xEr = horzcat(UT_xEr, [t + sum(Ts) qpresult(1)]');
+    UT_xEr = horzcat(UT_xEr, [t + sum(Ts) Opt_Vector(1)-foot_plants(n+2,1)]');
     UT_yEr = horzcat(UT_yEr, [t + sum(Ts) Opt_Vector(2)-foot_plants(n+2,2)]');
     bT_xEr = horzcat(bT_xEr, [t + sum(Ts) qpresult(2)]');
     bT_yEr = horzcat(bT_yEr, [t + sum(Ts) qpresult(4)]');
