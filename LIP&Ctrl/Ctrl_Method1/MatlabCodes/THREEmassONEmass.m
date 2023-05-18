@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N =6;
+N = 10;
 is_left = false;
 
 Lp = 0.2;
@@ -125,9 +125,11 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        F = 250; %Max 290 for 3Mass
+        Fy = 360; % max 350N @ 0.1
+        Fx = 0;
     else
-        F = 0;
+        Fy = 0;
+        Fx = 0;
     end
     
     % time variable is the local time
@@ -195,31 +197,31 @@ while Step(i) == 1
     
     %% measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
-    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), zmp_pend(ini(n+1)-1+q,1),0);
+    l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), zmp_pend(ini(n+1)-1+q,1)+PcZMP_x(q,n+1),Fx);
 
     k2x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2);
-    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, zmp_pend(ini(n+1)-1+q,1),0);
+    l2x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k1x/2, V0_3Mass(1)+l1x/2, zmp_pend(ini(n+1)-1+q,1)+PcZMP_x(q,n+1),Fx);
 
     k3x = t_sample*f1(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2);
-    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, zmp_pend(ini(n+1)-1+q,1),0);
+    l3x = t_sample*f2(t0+t_sample/2, x0_3Mass(1)+k2x/2, V0_3Mass(1)+l2x/2, zmp_pend(ini(n+1)-1+q,1)+PcZMP_x(q,n+1),Fx);
 
     k4x = t_sample*f1(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x);
-    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, zmp_pend(ini(n+1)-1+q,1),0);
+    l4x = t_sample*f2(t0+t_sample, x0_3Mass(1)+k3x, V0_3Mass(1)+l3x, zmp_pend(ini(n+1)-1+q,1)+PcZMP_x(q,n+1),Fx);
     
     k1y = t_sample*f1(t0,x0_3Mass(2),V0_3Mass(2));
-    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), zmp_pend(ini(n+1)-1+q,2),F);
+    l1y = t_sample*f2(t0,x0_3Mass(2),V0_3Mass(2), zmp_pend(ini(n+1)-1+q,2)+PcZMP_y(q,n+1),Fy);
 
     k2y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2);
-    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, zmp_pend(ini(n+1)-1+q,2),F);
+    l2y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k1y/2, V0_3Mass(2)+l1y/2, zmp_pend(ini(n+1)-1+q,2)+PcZMP_y(q,n+1),Fy);
 
     k3y = t_sample*f1(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2);
-    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, zmp_pend(ini(n+1)-1+q,2),F);
+    l3y = t_sample*f2(t0+t_sample/2, x0_3Mass(2)+k2y/2, V0_3Mass(2)+l2y/2, zmp_pend(ini(n+1)-1+q,2)+PcZMP_y(q,n+1),Fy);
 
     k4y = t_sample*f1(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y);
-    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, zmp_pend(ini(n+1)-1+q,2),F);
+    l4y = t_sample*f2(t0+t_sample, x0_3Mass(2)+k3y, V0_3Mass(2)+l3y, zmp_pend(ini(n+1)-1+q,2)+PcZMP_y(q,n+1),Fy);
     
     % update values for time = 0.002
-    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-zmp_pend(ini(n+1)-1+q,1:2)')+[0;-F/m]);
+    V0_3Mass = V0_3Mass + t_sample*(omega^2*(x0_3Mass-(zmp_pend(ini(n+1)-1+q,1:2)'+[PcZMP_x(q,n+1);PcZMP_y(q,n+1)]))+[-Fx/m;-Fy/m]);
     x0_3Mass(1) = x0_3Mass(1) + (k1x + 2*k2x + 2*k3x + k4x)/6;
     x0_3Mass(2) = x0_3Mass(2) + (k1y + 2*k2y + 2*k3y + k4y)/6;
     t0 = t0 + t_sample;
