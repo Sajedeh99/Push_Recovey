@@ -69,15 +69,18 @@ xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
 U0_x = [];
 U0_y = [];
 % Swg leg final destination pos array 
-UT_x = [];
-UT_y = [];
+UT_x = []; UT_xEr = [];
+UT_y = []; UT_yEr = [];
+bT_xEr = [];
+bT_yEr = [];
+T_step = []; t_var = [];
 % CoM pos array
 CoMx = [];
 CoMy = [];
 CoMx_3Mass = [];
 CoMy_3Mass = [];
-PcZMP_Y = [];
-PcZMP_X = [];
+PcZMP_Y = []; PcZMP_YY = [];
+PcZMP_X = []; PcZMP_XX = [];
 % reference DCM array
 XI_ref_X = [];
 XI_ref_Y = [];
@@ -194,6 +197,8 @@ while Step(i) == 1
     end 
     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
+    PcZMP_YY = horzcat(PcZMP_YY, PcZMP_y(q,n+1));
+    PcZMP_XX = horzcat(PcZMP_XX, PcZMP_x(q,n+1));
     
     %% measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
@@ -282,8 +287,13 @@ while Step(i) == 1
     uT_y = [t + sum(Ts) Opt_Vector(2)]';
     UT_x = horzcat(UT_x, uT_x);
     UT_y = horzcat(UT_y, uT_y);
-    
- %% 
+    UT_xEr = horzcat(UT_xEr, [t + sum(Ts) Opt_Vector(1)-foot_plants(n+2,1)]');
+    UT_yEr = horzcat(UT_yEr, [t + sum(Ts) Opt_Vector(2)-foot_plants(n+2,2)]');
+    bT_xEr = horzcat(bT_xEr, [t + sum(Ts) qpresult(2)]');
+    bT_yEr = horzcat(bT_yEr, [t + sum(Ts) qpresult(4)]');
+    T_step = horzcat(T_step, [t + sum(Ts) T]');
+    t_var = horzcat(t_var, [t + sum(Ts) t]');
+ %%    
     t = t + t_sample;
     
     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
@@ -299,6 +309,7 @@ while Step(i) == 1
         Step(i) = 1;
         n = length(Step)-1;
         % initial x0 & v0 for IP in next step
+        foot_plants = r_vrp;
         x0 = [CoM_x(2) CoM_y(2)]';
         term1 = [simoutx(q,2), simouty(q,2)];
         term2 = [simoutx(q,1), simouty(q,1)];
@@ -378,12 +389,11 @@ plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
 % plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
 % plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
 % plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
-% plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','g','LineStyle','-')
-legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,ref}','x_{com,meas}','u_{0,x}','u_{T,x}','P_{cZMP,x} + u_{0,x}') 
+plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','m','linewidth',1.5)
+legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,ref}','x_{com,meas}','u_{0,x}','u_{T,x}','P_{cZMP,x} + u_{0,x}','zmp_{pend}') 
 xlabel('time(s)');
 ylabel('position_{x} (m)');
 grid on
-
 
 figure(2)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
@@ -395,10 +405,41 @@ plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
 plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
 % plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
 % plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
-% plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','g','LineStyle','-')
-legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}')
+plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','m','linewidth',1.5)
+legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}','zmp_{pend}')
 xlabel('time(s)');
 ylabel('position_{y} (m)');
+grid on
+figure(3)
+plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+plot(ZETA_mea_x(1,:),PcZMP_XX,'color','r','linewidth',2);
+plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
+plot(bT_xEr(1,:),bT_xEr(2,:),'color','m','linewidth',2);hold on;
+legend('\xi_{err,x}','P_{cZMP,x}','u_{T,err}','b_{T,err}')
+xlabel('time(s)');
+ylabel('distance_{x} (m)');
+%ylim([-0.09 0.09])
+grid on
+
+figure(4)
+plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+plot(ZETA_mea_y(1,:),PcZMP_YY,'color','r','linewidth',2);
+plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
+plot(bT_yEr(1,:),bT_yEr(2,:),'color','m','linewidth',2);hold on;
+legend('\xi_{err,y}','P_{cZMP,y}','u_{T,err}','b_{T,err}')
+xlabel('time(s)');
+ylabel('distance_{y} (m)');
+%ylim([-0.05 0.05])
+grid on
+
+figure(5)
+plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
+plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+legend('T_{new}','t_{curr}')
+xlabel('time(s)');
+ylabel('time(s)');
+xlim([-0.1 6])
+set(gca, 'DataAspectRatio',[5 1 1])
 grid on
 
 %functions definition
