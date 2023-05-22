@@ -41,7 +41,7 @@ else
         foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i-1)*(Lp/2 + Wnom) 0];
     end
 end
-foot_plants(end+1, :) = [1,-1, 1] .* foot_plants(end,:);
+foot_plants(end+1, :) = [1,-0, 1] .* foot_plants(end,:);
 
 r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
@@ -69,8 +69,11 @@ xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
 U0_x = [];
 U0_y = [];
 % Swg leg final destination pos array 
-UT_x = [];
-UT_y = [];
+UT_x = []; UT_xEr = [];
+UT_y = []; UT_yEr = [];
+bT_xEr = [];
+bT_yEr = [];
+T_step = []; t_var = [];
 SWG_traj = [];
 M_FEET = [];
 ZMP_FEET = [];
@@ -94,8 +97,8 @@ ZETA_mea_y_3Mass = [];
 ZETA_err_x = [];
 ZETA_err_y = [];
 
-PcZMP_Y = [];
-PcZMP_X = [];
+PcZMP_Y = []; PcZMP_XX = [];
+PcZMP_X = []; PcZMP_YY = [];
 
 ini_org(1) = int32(1); fnl_org(1) = int32(Tnom/t_sample);
 for i = 2:N+3
@@ -120,10 +123,10 @@ com_dot = [0, 0];
 %% control loop
 while Step(i) == 1
     s = s + 1;
-
+[xi_meas_3Mass(2); xi_Y]
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        Fy = 390; % max 380 @ 0.1s
+        Fy = 360; % max 380 @ 0.1s
         Fx = 0;
     else
         Fy = 0;
@@ -172,7 +175,9 @@ while Step(i) == 1
     end 
     PcZMP_Y = horzcat(PcZMP_Y, PcZMP_y(q,n+1)+u0y);
     PcZMP_X = horzcat(PcZMP_X, PcZMP_x(q,n+1)+u0x);
-  
+    PcZMP_YY = horzcat(PcZMP_YY, PcZMP_y(q,n+1));
+    PcZMP_XX = horzcat(PcZMP_XX, PcZMP_x(q,n+1));
+     
     %% measured com and dcm of 3Mass IP
     k1x = t_sample*f1(t0,x0_3Mass(1),V0_3Mass(1));
     l1x = t_sample*f2(t0,x0_3Mass(1),V0_3Mass(1), zmp_pend(ini(n+1)-1+q,1)+PcZMP_x(q,n+1),Fx);
@@ -228,7 +233,7 @@ while Step(i) == 1
         W_min = u0(2) + W_min0;
         W_max = u0(2) + W_max0;
     end
-    
+[xi_meas_3Mass(2); xi_Y]
     % QP
     [qpresult, Opt_Vector] = controller_eng(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
           b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
@@ -247,6 +252,13 @@ while Step(i) == 1
     u0_y = [t + sum(Ts) u0y]';
     U0_x = horzcat(U0_x, u0_x);
     U0_y = horzcat(U0_y, u0_y);
+    
+    UT_xEr = horzcat(UT_xEr, [t + sum(Ts) Opt_Vector(1)-foot_plants(n+2,1)]');
+    UT_yEr = horzcat(UT_yEr, [t + sum(Ts) Opt_Vector(2)-foot_plants(n+2,2)]');
+    bT_xEr = horzcat(bT_xEr, [t + sum(Ts) qpresult(2)]');
+    bT_yEr = horzcat(bT_yEr, [t + sum(Ts) qpresult(4)]');
+    T_step = horzcat(T_step, [t + sum(Ts) T]');
+    t_var = horzcat(t_var, [t + sum(Ts) t]');
     
     %% update pattern parameter
     for j = n:N+2
@@ -275,8 +287,8 @@ while Step(i) == 1
     %% going next step
     t = t + t_sample;
     
-    [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
-    [n T t q]
+%     [Opt_Vector(1); Opt_Vector(2); Opt_Vector(3); Opt_Vector(4); Opt_Vector(5)]
+    [n T t]
     
     if t>T
         t = t_sample;
@@ -287,6 +299,7 @@ while Step(i) == 1
         n = length(Step)-1;
         
         % new Sup leg pos = last Swg leg destination pos
+        foot_plants = r_vrp;
         u0x = Opt_Vector(1);
         u0y = Opt_Vector(2);
         u0 = [u0x u0y]';
@@ -373,6 +386,38 @@ plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','m','LineStyle','-','linewidth',1.5)
 legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}','zmp_{pend}')
 xlabel('time(s)');
 ylabel('position_{y} (m)');
+grid on
+
+figure(3)
+plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+plot(ZETA_mea_x_3Mass(1,:),PcZMP_XX,'color','r','linewidth',2);
+plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
+plot(bT_xEr(1,:),bT_xEr(2,:),'color','m','linewidth',2);hold on;
+legend('\xi_{err,x}','P_{cZMP,x}','u_{T,err}','b_{T,err}')
+xlabel('time(s)');
+ylabel('distance_{x} (m)');
+%ylim([-0.09 0.09])
+grid on
+
+figure(4)
+plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+plot(ZETA_mea_y_3Mass(1,:),PcZMP_YY,'color','r','linewidth',2);
+plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
+plot(bT_yEr(1,:),bT_yEr(2,:),'color','m','linewidth',2);hold on;
+legend('\xi_{err,y}','P_{cZMP,y}','u_{T,err}','b_{T,err}')
+xlabel('time(s)');
+ylabel('distance_{y} (m)');
+%ylim([-0.05 0.05])
+grid on
+
+figure(5)
+plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
+plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+legend('T_{new}','t_{curr}')
+xlabel('time(s)');
+ylabel('time(s)');
+xlim([-0.1 6])
+set(gca, 'DataAspectRatio',[5 1 1])
 grid on
 
 %functions definition
