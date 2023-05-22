@@ -12,7 +12,7 @@ else
         foot_plants(i, :) = [(Lnom)*(i-1) (-1)^(i-1)*(Lp/2 + Wnom) 0];
     end
 end
-foot_plants(end+1, :) = [1,-1, 1] .* foot_plants(end,:);
+foot_plants(end+1, :) = [1,-0, 1] .* foot_plants(end,:);
 
 r_vrp = foot_plants;
 r_vrp(:,3) =+ delta_z_vrp;
@@ -33,7 +33,7 @@ end
 for ith = 1:N+3
     indx =  (T*(ith-1)/t_sample);
         
-    endtime = T/t_sample;
+    endtime = int32(T/t_sample);
     init_time = indx*t_sample + t_sample;
     final_time = init_time + T - t_sample;
     if is_left
@@ -79,7 +79,7 @@ zmp_pend(:,3) = delta_z_vrp*ones(length(zmp_pend),1);
 % zmp_pend = zmp_pend(1:(N+2)*(T/t_sample)+1,:);
 function [xi_ini, xi_eos] = Xi(N, zmp_pend, omega, T, t_sample)
 xi_eos = zeros(N+2,3);
-xi_eos(N+2,:) = [zmp_pend((N+2)*int32(T/t_sample)+1,1) zmp_pend((N+2)*int32(T/t_sample)+1,2) zmp_pend((N+2)*int32(T/t_sample)+1,3)];
+xi_eos(N+2,:) = [zmp_pend((N+2)*int32(T/t_sample)+1,1) 0 zmp_pend((N+2)*int32(T/t_sample)+1,3)];
 for k = N+1:-1:1
         xi_eos(k,:) = zmp_pend(k*int32(T/t_sample)+1,:) + (exp(-omega*T))*(xi_eos(k+1,:)-zmp_pend(k*int32(T/t_sample)+1,:));
         xi_ini(k+1,:) = xi_eos(k,:);
