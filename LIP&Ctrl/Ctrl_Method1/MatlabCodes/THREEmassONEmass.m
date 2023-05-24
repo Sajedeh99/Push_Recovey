@@ -1,6 +1,9 @@
 clear all; clc; close all;
-N = 10;
+N = 3;
 is_left = false;
+
+animateOn = true; 
+speedupfactor = 12; % animation speed up 
 
 Lp = 0.2;
 L_min0 = -0.5;
@@ -19,6 +22,7 @@ mfeet = 6;
 m = 60;
 g = 9.8;
 swingHeight = 0.1;
+z_robot = 0.78;
 delta_z_vrp = 0.8;
 omega = sqrt(g/delta_z_vrp);
 
@@ -97,6 +101,9 @@ SWG_traj = [];
 M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
+
+% robot = createRobot(x0_3Mass, z_robot);
+
 ini_org(1) = int32(1); fnl_org(1) = int32(Tnom/t_sample);
 for i = 2:N+3
     ini_org(i) = fnl_org(i-1) + 1;
@@ -108,6 +115,8 @@ end
 ini = ini_org;
 fnl = fnl_org;
 s = 1; inc(s) = 0;
+
+stateR(:,s) = r_vrp(2,:);
 
 % time 
 t = t_sample; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
@@ -128,7 +137,7 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        Fy = 360; % max 350N @ 0.1
+        Fy = 0; % max 350N @ 0.1
         Fx = 0;
     else
         Fy = 0;
@@ -375,74 +384,82 @@ while Step(i) == 1
     end
     ZMP_PEND = horzcat(ZMP_PEND, [t + sum(Ts); zmp_pend(ini(n+1)-1+q,1:2)']);
     
-
+%     if mod(n,2)==0
+        stateR(:,s) = swg_traj(ini(n+1)-1+q,1:3);
+        stateL(:,s) = [u0x u0y];
+        stateCoM(:,s) = x0_3Mass;
+%     else
+%         stateL = qswing(:,q);
+%         stateR = [u0x u0y];
+%     end
+    
 end
 %% plot result
-figure(1)
-plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
-plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
-plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
-plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','g','linewidth',2);hold on;
-plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
-plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
-plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
-% plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
-% plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
-% plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
-plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','m','linewidth',1.5)
-legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,ref}','x_{com,meas}','u_{0,x}','u_{T,x}','P_{cZMP,x} + u_{0,x}','zmp_{pend}') 
-xlabel('time(s)');
-ylabel('position_{x} (m)');
-grid on
+% figure(1)
+% plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
+% plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
+% plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
+% plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','g','linewidth',2);hold on;
+% plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
+% plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
+% plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
+% % plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
+% % plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
+% % plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
+% plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','m','linewidth',1.5)
+% legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,ref}','x_{com,meas}','u_{0,x}','u_{T,x}','P_{cZMP,x} + u_{0,x}','zmp_{pend}') 
+% xlabel('time(s)');
+% ylabel('position_{x} (m)');
+% grid on
+% 
+% figure(2)
+% plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
+% plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
+% plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
+% plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','g','linewidth',2);hold on;
+% plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
+% plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+% plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
+% % plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
+% % plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
+% plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','m','linewidth',1.5)
+% legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}','zmp_{pend}')
+% xlabel('time(s)');
+% ylabel('position_{y} (m)');
+% grid on
+% figure(3)
+% plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+% plot(ZETA_mea_x(1,:),PcZMP_XX,'color','r','linewidth',2);
+% plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
+% plot(bT_xEr(1,:),bT_xEr(2,:),'color','m','linewidth',2);hold on;
+% legend('\xi_{err,x}','P_{cZMP,x}','u_{T,err}','b_{T,err}')
+% xlabel('time(s)');
+% ylabel('distance_{x} (m)');
+% %ylim([-0.09 0.09])
+% grid on
+% 
+% figure(4)
+% plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+% plot(ZETA_mea_y(1,:),PcZMP_YY,'color','r','linewidth',2);
+% plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
+% plot(bT_yEr(1,:),bT_yEr(2,:),'color','m','linewidth',2);hold on;
+% legend('\xi_{err,y}','P_{cZMP,y}','u_{T,err}','b_{T,err}')
+% xlabel('time(s)');
+% ylabel('distance_{y} (m)');
+% %ylim([-0.05 0.05])
+% grid on
+% 
+% figure(5)
+% plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
+% plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+% legend('T_{new}','t_{curr}')
+% xlabel('time(s)');
+% ylabel('time(s)');
+% xlim([-0.1 6])
+% set(gca, 'DataAspectRatio',[5 1 1])
+% grid on
 
-figure(2)
-plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
-plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
-plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
-plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','g','linewidth',2);hold on;
-plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
-plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
-plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
-% plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
-% plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
-plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','m','linewidth',1.5)
-legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}','zmp_{pend}')
-xlabel('time(s)');
-ylabel('position_{y} (m)');
-grid on
-figure(3)
-plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
-plot(ZETA_mea_x(1,:),PcZMP_XX,'color','r','linewidth',2);
-plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
-plot(bT_xEr(1,:),bT_xEr(2,:),'color','m','linewidth',2);hold on;
-legend('\xi_{err,x}','P_{cZMP,x}','u_{T,err}','b_{T,err}')
-xlabel('time(s)');
-ylabel('distance_{x} (m)');
-%ylim([-0.09 0.09])
-grid on
-
-figure(4)
-plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
-plot(ZETA_mea_y(1,:),PcZMP_YY,'color','r','linewidth',2);
-plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
-plot(bT_yEr(1,:),bT_yEr(2,:),'color','m','linewidth',2);hold on;
-legend('\xi_{err,y}','P_{cZMP,y}','u_{T,err}','b_{T,err}')
-xlabel('time(s)');
-ylabel('distance_{y} (m)');
-%ylim([-0.05 0.05])
-grid on
-
-figure(5)
-plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
-plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
-legend('T_{new}','t_{curr}')
-xlabel('time(s)');
-ylabel('time(s)');
-xlim([-0.1 6])
-set(gca, 'DataAspectRatio',[5 1 1])
-grid on
-
-%functions definition
+%% functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
 xi_eos = zeros(N+2,3);
 xi_eos(N+2,:) = r_vrp(end-1,:);
@@ -460,4 +477,148 @@ omega = 3.5;
 m = 60;
 d = -F/m;
 dvdt = omega^2*(x-u) + d;
+end
+function animate(stateR, stateL, stateCoM, animateOn, robot, speedupfactor, idx)
+
+n = [0;  0; -1]; % x
+s = [-1; 0; 0];  % y
+a = [0;  1; 0];  % z
+R = [n s a];   
+
+% Get Left joints
+p = stateL.*[-1; 1; 1]-stateCoM.*[1; 1; 1];
+transmatL =  [R     p; 
+            [0 0 0 1]];
+isLeft = true; 
+qLeft = invKinBody2Foot(transmatL, isLeft); % Call IK function
+
+% Get Right joints
+p = stateR.*[-1; 1; 1]-stateCoM.*[1; 1; 1]; 
+transmatR =  [R     p; 
+            [0 0 0 1]];
+isLeft = false; 
+qRight = invKinBody2Foot(transmatR, isLeft);
+
+% Animate
+if animateOn
+    if rem(idx,speedupfactor) == 0
+        updateJoints(robot, qRight, qLeft, stateCoM);
+    end 
+end  
+end
+function robot = createRobot(stateC, z_robot)
+
+% NOTE: make sure parameters match in inverse kinematics function 
+L1 = 0.12; 
+L2 = 0; 
+L3 = 0.4;
+L4 = 0.38;
+L5 = 0;
+       
+robot = rigidBodyTree;
+% Right Leg
+dhparams = [0       0        0      0;     % Base -> pelvisy
+            0       0        0      0;     % pelvisy -> pelvisx
+            L1      0       -L2     0;     % pelvisx -> hip yaw
+            0      -pi/2     0      0;     % Hip yaw -> hip roll
+            0      -pi/2     0      0;     % Hip roll -> hip pitch       
+            L3      0        0      0;     % Hip pitch -> knee pitch
+            L4      0        0      0;     % Knee pitch -> ankle pitch
+            0       pi/2     0      0;     % Ankle pitch -> ankle roll
+            L5      0        0      0];    % Ankle roll -> end effector (foot)
+       
+for idx = 1:size(dhparams,1)
+    rightLeg(idx) = rigidBody("rightleg"+idx);
+    rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'revolute');
+    if idx==1 || idx==2
+        rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'prismatic');
+        if idx==1 
+            rightJnt(idx).JointAxis = [0 -1 0];
+        else
+           rightJnt(idx).JointAxis = [1 0 0];
+        end
+    end
+    setFixedTransform(rightJnt(idx),dhparams(idx,:),'dh'); 
+    rightLeg(idx).Joint = rightJnt(idx);
+    if idx==1
+        addBody(robot,rightLeg(idx),"base");     
+    else
+        addBody(robot,rightLeg(idx),"rightleg"+(idx-1));
+    end
+    
+end
+
+% Left Leg
+dhparams = [0      0         0      0;
+            0      0         0      0;
+           -L1     0        -L2     0;    % Only difference with right leg is the
+            0     -pi/2      0      0;    % first element is -L1 instead of L1
+            0     -pi/2      0      0; 
+            L3      0        0      0;
+            L4      0        0      0;
+            0       pi/2     0      0;
+            L5      0        0      0];
+        
+for idx = 1:size(dhparams,1)
+    leftLeg(idx) = rigidBody("leftleg"+idx); 
+    leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'revolute');
+    if idx==1 || idx==2
+        leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'prismatic');
+        if idx==1 
+            leftJnt(idx).JointAxis = [0 -1 0];
+        else
+            leftJnt(idx).JointAxis = [1 0 0];
+        end
+    end
+    setFixedTransform(leftJnt(idx),dhparams(idx,:),'dh'); 
+    leftLeg(idx).Joint = leftJnt(idx);
+    if idx==1
+        addBody(robot,leftLeg(idx),"base");     
+    else
+        addBody(robot,leftLeg(idx),"leftleg"+(idx-1));
+    end
+end
+
+% showdetails(robot)
+hFig = figure; 
+hFig.Visible = 'on'; 
+hFig.Units = 'Normalized'; 
+hFig.OuterPosition = [0 0 1 1];
+hAx2 = axes(hFig);
+
+
+desconfig = robot.homeConfiguration;
+
+
+qright0 = zeros(1,6); 
+qleft0 = zeros(1,6);
+updateJoints(robot, qright0, qleft0, stateC)
+view(3)
+grid on
+axis([-z_robot z_robot -3*z_robot 0.3*z_robot  -1.1*z_robot 0.5*z_robot])
+hold on
+end
+function updateJoints(robot, anglesright, anglesleft, stateC)
+    desconfig = robot.homeConfiguration;
+    
+    desconfig(1).JointPosition = stateC(2); % angle offset
+    desconfig(2).JointPosition = stateC(1);
+    for idx = 1:length(anglesright)
+        desconfig(idx+3).JointPosition = anglesright(idx);
+    end 
+    desconfig(4).JointPosition = desconfig(4).JointPosition - pi;
+    desconfig(5).JointPosition = desconfig(5).JointPosition + pi/2; 
+    
+    desconfig(10).JointPosition = stateC(2);
+    desconfig(11).JointPosition = stateC(1);
+    for idx = 1:length(anglesleft)
+        desconfig(idx+12).JointPosition = anglesleft(idx);
+    end 
+    desconfig(13).JointPosition = desconfig(13).JointPosition - pi; 
+    desconfig(14).JointPosition = desconfig(14).JointPosition + pi/2; 
+       
+    % update graphics 
+    show(robot, desconfig, 'PreservePlot', false);
+    title('Walking Pattern Inverse Kinematics')
+    pause(0.001)
 end
