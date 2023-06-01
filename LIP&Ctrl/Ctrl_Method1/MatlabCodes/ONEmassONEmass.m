@@ -120,7 +120,7 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        Fy = 0; % max 85  700
+        Fy = 170; % max 85  700
         Fx = 0; % max 170   -1250
     else
         Fy = 0;

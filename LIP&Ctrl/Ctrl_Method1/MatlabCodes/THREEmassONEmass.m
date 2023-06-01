@@ -246,6 +246,8 @@ while Step(i) == 1
     CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
     CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
     
+    stateCoM(:,s-1) = x0_3Mass;
+    
     xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
     ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,[time xi_meas_3Mass(1)]');
     ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,[time xi_meas_3Mass(2)]');
@@ -387,7 +389,7 @@ while Step(i) == 1
 %     if mod(n,2)==0
         stateR(:,s) = swg_traj(ini(n+1)-1+q,1:3);
         stateL(:,s) = [u0x u0y];
-        stateCoM(:,s) = x0_3Mass;
+        
 %     else
 %         stateL = qswing(:,q);
 %         stateR = [u0x u0y];
