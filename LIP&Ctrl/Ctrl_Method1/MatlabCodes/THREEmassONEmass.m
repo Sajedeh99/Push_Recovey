@@ -3,7 +3,7 @@ N = 3;
 is_left = false;
 
 animateOn = true; 
-speedupfactor = 12; % animation speed up 
+speedupfactor = 15; % animation speed up 
 
 Lp = 0.2;
 L_min0 = -0.5;
@@ -22,7 +22,7 @@ mfeet = 6;
 m = 60;
 g = 9.8;
 swingHeight = 0.1;
-z_robot = 0.78;
+z_robot = 0.68;
 delta_z_vrp = 0.8;
 omega = sqrt(g/delta_z_vrp);
 
@@ -102,7 +102,7 @@ M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
 
-% robot = createRobot(x0_3Mass, z_robot);
+robot = createRobot(x0_3Mass, z_robot);
 
 ini_org(1) = int32(1); fnl_org(1) = int32(Tnom/t_sample);
 for i = 2:N+3
@@ -116,7 +116,7 @@ ini = ini_org;
 fnl = fnl_org;
 s = 1; inc(s) = 0;
 
-stateR(:,s) = r_vrp(2,:);
+
 
 % time 
 t = t_sample; t0 = 0; T = Tnom; Ts = 0; Tsim = [t_sample:t_sample:T_max];
@@ -131,6 +131,11 @@ xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,
 
 x_com(1,:) = [xi_ini(1,1) xi_ini(1,2)];
 com_dot = [0, 0];
+stateR(:,s) = [-u0y; u0x; 0];
+stateL(:,s) = [ u0y; u0x; 0];
+stateCoM(:,s)=[x0_3Mass(2); x0_3Mass(1); z_robot];
+animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, speedupfactor, s);
+
 %% control loop
 while Step(i) == 1
 
@@ -246,7 +251,7 @@ while Step(i) == 1
     CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
     CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
     
-    stateCoM(:,s-1) = x0_3Mass;
+    stateCoM(:,s) = [x0_3Mass(2);x0_3Mass(1);z_robot];
     
     xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
     ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,[time xi_meas_3Mass(1)]');
@@ -372,7 +377,7 @@ while Step(i) == 1
                             init_time, final_time,t_sample);   
 
         swg_traj(ini(ith):fnl(ith),:) = [qswing' dqswing' ddqswing'];
-%         SWG_traj = horzcat(SWG_traj,swg_traj);
+%         SWG_traj = horzcat(SWG_traj,swg_traj');
 
         %% three mass parameters evaluation 
         m_feet(ini(ith):fnl(ith),:) = mswg*(qswing(1:2,:)' -  ones(length(qswing),1)*[r_vrp(ith,1) r_vrp(ith,2)]).*(g*ones(length(qswing),1) + ddqswing(3,:)')...
@@ -386,80 +391,90 @@ while Step(i) == 1
     end
     ZMP_PEND = horzcat(ZMP_PEND, [t + sum(Ts); zmp_pend(ini(n+1)-1+q,1:2)']);
     
-%     if mod(n,2)==0
-        stateR(:,s) = swg_traj(ini(n+1)-1+q,1:3);
-        stateL(:,s) = [u0x u0y];
-        
-%     else
-%         stateL = qswing(:,q);
-%         stateR = [u0x u0y];
-%     end
-    
+    if (is_left==false)
+        if mod(n,2)==0
+            stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+            stateL(:,s) = [u0y; u0x; 0];
+        else
+            stateR(:,s) = [u0y; u0x; 0];
+            stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+        end        
+    else
+        if mod(n,2)==0
+            stateR(:,s) = [u0y; u0x; 0];
+            stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+        else
+            stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+            stateL(:,s) = [u0y; u0x; 0];
+        end
+    end
+    animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, speedupfactor, s);    
 end
 %% plot result
-% figure(1)
-% plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
-% plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
-% plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
-% plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','g','linewidth',2);hold on;
-% plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
-% plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
-% plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
-% % plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
-% % plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
-% % plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
-% plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','m','linewidth',1.5)
-% legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,ref}','x_{com,meas}','u_{0,x}','u_{T,x}','P_{cZMP,x} + u_{0,x}','zmp_{pend}') 
-% xlabel('time(s)');
-% ylabel('position_{x} (m)');
-% grid on
-% 
-% figure(2)
-% plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
-% plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
-% plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
-% plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','g','linewidth',2);hold on;
-% plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
-% plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
-% plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
-% % plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
-% % plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
-% plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','m','linewidth',1.5)
-% legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}','zmp_{pend}')
-% xlabel('time(s)');
-% ylabel('position_{y} (m)');
-% grid on
-% figure(3)
-% plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
-% plot(ZETA_mea_x(1,:),PcZMP_XX,'color','r','linewidth',2);
-% plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
-% plot(bT_xEr(1,:),bT_xEr(2,:),'color','m','linewidth',2);hold on;
-% legend('\xi_{err,x}','P_{cZMP,x}','u_{T,err}','b_{T,err}')
-% xlabel('time(s)');
-% ylabel('distance_{x} (m)');
-% %ylim([-0.09 0.09])
-% grid on
-% 
-% figure(4)
-% plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
-% plot(ZETA_mea_y(1,:),PcZMP_YY,'color','r','linewidth',2);
-% plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
-% plot(bT_yEr(1,:),bT_yEr(2,:),'color','m','linewidth',2);hold on;
-% legend('\xi_{err,y}','P_{cZMP,y}','u_{T,err}','b_{T,err}')
-% xlabel('time(s)');
-% ylabel('distance_{y} (m)');
-% %ylim([-0.05 0.05])
-% grid on
-% 
-% figure(5)
-% plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
-% plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
-% legend('T_{new}','t_{curr}')
-% xlabel('time(s)');
-% ylabel('time(s)');
-% xlim([-0.1 6])
-% set(gca, 'DataAspectRatio',[5 1 1])
-% grid on
+hold off
+figure(1)
+plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
+plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
+plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
+plot(CoMx_3Mass(1,:),CoMx_3Mass(2,:),'color','g','linewidth',2);hold on;
+plot(U0_x(1,:),U0_x(2,:),'color','c','linewidth',2);hold on;
+plot(UT_x(1,:),UT_x(2,:),'color','b','linewidth',2);hold on;
+plot(ZETA_mea_x(1,:),PcZMP_X,'color','r','linewidth',2);
+% plot(SWG_traj(1,:), SWG_traj(2,:),'color','b')
+% plot(SWG_traj(1,:), SWG_traj(4,:),'color','k')
+% plot(ZMP_FEET(1,:), ZMP_FEET(2,:),'color','c','LineStyle','-')
+plot(ZMP_PEND(1,:), ZMP_PEND(2,:),'color','m','linewidth',1.5)
+legend('\xi_{ref,x}','\xi_{meas,x}','x_{com,ref}','x_{com,meas}','u_{0,x}','u_{T,x}','P_{cZMP,x} + u_{0,x}','zmp_{pend}') 
+xlabel('time(s)');
+ylabel('position_{x} (m)');
+grid on
+
+figure(2)
+plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
+plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
+plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
+plot(CoMy_3Mass(1,:),CoMy_3Mass(2,:),'color','g','linewidth',2);hold on;
+plot(U0_y(1,:),U0_y(2,:),'color','c','linewidth',2);
+plot(UT_y(1,:),UT_y(2,:),'color','b','linewidth',2);hold on;
+plot(ZETA_mea_y(1,:),PcZMP_Y,'color','r','linewidth',2);
+% plot(SWG_traj(1,:), SWG_traj(3,:),'color','b')
+% plot(ZMP_FEET(1,:), ZMP_FEET(3,:),'color','c','LineStyle','-')
+plot(ZMP_PEND(1,:), ZMP_PEND(3,:),'color','m','linewidth',1.5)
+legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T,y}','P_{cZMP,y} + u_{0,y}','zmp_{pend}')
+xlabel('time(s)');
+ylabel('position_{y} (m)');
+grid on
+figure(3)
+plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+plot(ZETA_mea_x(1,:),PcZMP_XX,'color','r','linewidth',2);
+plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
+plot(bT_xEr(1,:),bT_xEr(2,:),'color','m','linewidth',2);hold on;
+legend('\xi_{err,x}','P_{cZMP,x}','u_{T,err}','b_{T,err}')
+xlabel('time(s)');
+ylabel('distance_{x} (m)');
+%ylim([-0.09 0.09])
+grid on
+
+figure(4)
+plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+plot(ZETA_mea_y(1,:),PcZMP_YY,'color','r','linewidth',2);
+plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
+plot(bT_yEr(1,:),bT_yEr(2,:),'color','m','linewidth',2);hold on;
+legend('\xi_{err,y}','P_{cZMP,y}','u_{T,err}','b_{T,err}')
+xlabel('time(s)');
+ylabel('distance_{y} (m)');
+%ylim([-0.05 0.05])
+grid on
+
+figure(5)
+plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
+plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
+legend('T_{new}','t_{curr}')
+xlabel('time(s)');
+ylabel('time(s)');
+xlim([-0.1 6])
+set(gca, 'DataAspectRatio',[5 1 1])
+grid on
 
 %% functions definition
 function [xi_ini, xi_eos] = Xi(N, r_vrp, omega, Tnom)
