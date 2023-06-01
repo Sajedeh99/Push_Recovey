@@ -102,7 +102,6 @@ M_FEET = [];
 ZMP_FEET = [];
 ZMP_PEND = [];
 
-robot = createRobot(x0_3Mass, z_robot);
 
 ini_org(1) = int32(1); fnl_org(1) = int32(Tnom/t_sample);
 for i = 2:N+3
@@ -131,10 +130,11 @@ xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,
 
 x_com(1,:) = [xi_ini(1,1) xi_ini(1,2)];
 com_dot = [0, 0];
-stateR(:,s) = [-u0y; u0x; 0];
-stateL(:,s) = [ u0y; u0x; 0];
+stateR(:,s) = [-u0y; u0x; -0];
+stateL(:,s) = [ u0y; u0x; -0];
 stateCoM(:,s)=[x0_3Mass(2); x0_3Mass(1); z_robot];
-animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, speedupfactor, s);
+[robot, hLeftRel, hRightRel, hCoMRel] = createRobot(x0_3Mass, z_robot, stateL, stateR, stateCoM);
+animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);
 
 %% control loop
 while Step(i) == 1
@@ -394,25 +394,25 @@ while Step(i) == 1
     if (is_left==false)
         if mod(n,2)==0
             stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
-            stateL(:,s) = [u0y; u0x; 0];
+            stateL(:,s) = [u0y; u0x; -0];
         else
-            stateR(:,s) = [u0y; u0x; 0];
+            stateR(:,s) = [u0y; u0x; -0];
             stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
         end        
     else
         if mod(n,2)==0
-            stateR(:,s) = [u0y; u0x; 0];
+            stateR(:,s) = [u0y; u0x; -0];
             stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
         else
             stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
-            stateL(:,s) = [u0y; u0x; 0];
+            stateL(:,s) = [u0y; u0x; -0];
         end
     end
-    animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, speedupfactor, s);    
+    animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);    
 end
 %% plot result
 hold off
-figure(1)
+figure(2)
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
 plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
 plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
@@ -429,7 +429,7 @@ xlabel('time(s)');
 ylabel('position_{x} (m)');
 grid on
 
-figure(2)
+figure(3)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
 plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
 plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
@@ -444,7 +444,7 @@ legend('\xi_{ref,y}','\xi_{meas,y}','y_{com,ref}','y_{com,meas}','u_{0,y}','u_{T
 xlabel('time(s)');
 ylabel('position_{y} (m)');
 grid on
-figure(3)
+figure(4)
 plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 plot(ZETA_mea_x(1,:),PcZMP_XX,'color','r','linewidth',2);
 plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
@@ -455,7 +455,7 @@ ylabel('distance_{x} (m)');
 %ylim([-0.09 0.09])
 grid on
 
-figure(4)
+figure(5)
 plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 plot(ZETA_mea_y(1,:),PcZMP_YY,'color','r','linewidth',2);
 plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
@@ -466,7 +466,7 @@ ylabel('distance_{y} (m)');
 %ylim([-0.05 0.05])
 grid on
 
-figure(5)
+figure(6)
 plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
 plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 legend('T_{new}','t_{curr}')
@@ -495,7 +495,7 @@ m = 60;
 d = -F/m;
 dvdt = omega^2*(x-u) + d;
 end
-function animate(stateR, stateL, stateCoM, animateOn, robot, speedupfactor, idx)
+function animate(stateR, stateL, stateCoM, animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, idx, z_robot)
 
 n = [0;  0; -1]; % x
 s = [-1; 0; 0];  % y
@@ -515,6 +515,12 @@ transmatR =  [R     p;
             [0 0 0 1]];
 isLeft = false; 
 qRight = invKinBody2Foot(transmatR, isLeft);
+appendLine(hLeftRel, stateL.*[-1; -1; 1]-[0;0;z_robot]); 
+appendLine(hRightRel, stateR.*[-1; -1; 1]-[0;0;z_robot]);
+appendLine(hCoMRel, stateCoM.*[1; -1; 1]-[0;0;z_robot]);
+% updateLine(hLeftPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateL([1,3,5],sidx)]); 
+% updateLine(hRightPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateR([1,3,5],sidx)]); 
+
 
 % Animate
 if animateOn
@@ -523,7 +529,7 @@ if animateOn
     end 
 end  
 end
-function robot = createRobot(stateC, z_robot)
+function [robot, hLeftRel, hRightRel, hCoMRel] = createRobot(stateC, z_robot, stateL, stateR, stateCoM)
 
 % NOTE: make sure parameters match in inverse kinematics function 
 L1 = 0.12; 
@@ -598,11 +604,11 @@ end
 
 % showdetails(robot)
 hFig = figure; 
-hFig.Visible = 'on'; 
+% hFig.Visible = 'on'; 
 hFig.Units = 'Normalized'; 
 hFig.OuterPosition = [0 0 1 1];
 hAx2 = axes(hFig);
-
+mcolors = get(gca, 'colororder'); 
 
 desconfig = robot.homeConfiguration;
 
@@ -610,10 +616,15 @@ desconfig = robot.homeConfiguration;
 qright0 = zeros(1,6); 
 qleft0 = zeros(1,6);
 updateJoints(robot, qright0, qleft0, stateC)
+hold on
+hLeftRel = plot3(-stateL(1),-stateL(2),stateL(3)-z_robot,'Color',mcolors(1,:),"LineWidth", 2.5); 
+hRightRel = plot3(-stateR(1),-stateR(2),stateR(3)-z_robot,'Color',mcolors(2,:),"LineWidth", 2.5);
+hCoMRel = plot3(stateCoM(1),-stateCoM(2),stateCoM(3)-z_robot,'Color',mcolors(3,:),"LineWidth", 2.5);
+
 view(3)
 grid on
 axis([-z_robot z_robot -3*z_robot 0.3*z_robot  -1.1*z_robot 0.5*z_robot])
-hold on
+
 end
 function updateJoints(robot, anglesright, anglesleft, stateC)
     desconfig = robot.homeConfiguration;
@@ -638,4 +649,14 @@ function updateJoints(robot, anglesright, anglesleft, stateC)
     show(robot, desconfig, 'PreservePlot', false);
     title('Walking Pattern Inverse Kinematics')
     pause(0.001)
+end
+function appendLine(gHandle, points)
+    gHandle.XData(end+1) = points(1); 
+    gHandle.YData(end+1) = points(2); 
+    gHandle.ZData(end+1) = points(3); 
+end
+function updateLine(gHandle, points)
+    gHandle.XData = points(1,:); 
+    gHandle.YData = points(2,:); 
+    gHandle.ZData = points(3,:); 
 end
