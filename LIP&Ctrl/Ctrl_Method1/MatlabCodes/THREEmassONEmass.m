@@ -1,5 +1,5 @@
 clear all; clc; close all;
-N = 3;
+N = 6;
 is_left = false;
 
 animateOn = true; 
@@ -130,8 +130,8 @@ xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,
 
 x_com(1,:) = [xi_ini(1,1) xi_ini(1,2)];
 com_dot = [0, 0];
-stateR(:,s) = [-u0y; u0x; -0];
-stateL(:,s) = [ u0y; u0x; -0];
+stateR(:,s) = [-u0y; u0x; 0];
+stateL(:,s) = [ u0y; u0x; 0];
 stateCoM(:,s)=[x0_3Mass(2); x0_3Mass(1); z_robot];
 [robot, hLeftRel, hRightRel, hCoMRel] = createRobot(x0_3Mass, z_robot, stateL, stateR, stateCoM);
 animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);
@@ -142,7 +142,7 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
-        Fy = 0; % max 350N @ 0.1
+        Fy = 360; % max 350N @ 0.1
         Fx = 0;
     else
         Fy = 0;
@@ -411,6 +411,19 @@ while Step(i) == 1
     animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);    
 end
 %% plot result
+r = 0.07;
+hold on
+[x,y,z] = sphere(50);
+x0 = stateCoM(1,end); y0 = -stateCoM(2,end); z0 = 0.2;
+x = x*r + x0;
+y = y*r + y0;
+z = z*r + z0;
+surface(x,y,z,'FaceColor', 'b','EdgeColor','none')
+plot3([stateCoM(1,end) stateCoM(1,end)],[-stateCoM(2,end) -stateCoM(2,end)],[0.2 0], ...
+                     'LineWidth',1,'Color','b');
+xlabel('Y(m)');
+ylabel('X(m)');
+zlabel('Z(m)');
 hold off
 figure(2)
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
@@ -503,21 +516,21 @@ a = [0;  1; 0];  % z
 R = [n s a];   
 
 % Get Left joints
-p = stateL.*[-1; 1; 1]-stateCoM.*[1; 1; 1];
+p = stateR.*[1; 1; 1]-stateCoM.*[1; 1; 1];
 transmatL =  [R     p; 
             [0 0 0 1]];
 isLeft = true; 
 qLeft = invKinBody2Foot(transmatL, isLeft); % Call IK function
 
 % Get Right joints
-p = stateR.*[-1; 1; 1]-stateCoM.*[1; 1; 1]; 
+p = stateL.*[1; 1; 1]-stateCoM.*[1; 1; 1]; 
 transmatR =  [R     p; 
             [0 0 0 1]];
 isLeft = false; 
 qRight = invKinBody2Foot(transmatR, isLeft);
-appendLine(hLeftRel, stateL.*[-1; -1; 1]-[0;0;z_robot]); 
-appendLine(hRightRel, stateR.*[-1; -1; 1]-[0;0;z_robot]);
-appendLine(hCoMRel, stateCoM.*[1; -1; 1]-[0;0;z_robot]);
+appendLine(hLeftRel, stateL.*[1; -1; 1]); 
+appendLine(hRightRel, stateR.*[1; -1; 1]);
+appendLine(hCoMRel, stateCoM.*[1; -1; 1]-[0;0;-0.2]);
 % updateLine(hLeftPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateL([1,3,5],sidx)]); 
 % updateLine(hRightPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateR([1,3,5],sidx)]); 
 
@@ -540,7 +553,8 @@ L5 = 0;
        
 robot = rigidBodyTree;
 % Right Leg
-dhparams = [0       0        0      0;     % Base -> pelvisy
+dhparams = [0       0        0      0;
+            0       0        0      0;     % Base -> pelvisy
             0       0        0      0;     % pelvisy -> pelvisx
             L1      0       -L2     0;     % pelvisx -> hip yaw
             0      -pi/2     0      0;     % Hip yaw -> hip roll
@@ -553,9 +567,11 @@ dhparams = [0       0        0      0;     % Base -> pelvisy
 for idx = 1:size(dhparams,1)
     rightLeg(idx) = rigidBody("rightleg"+idx);
     rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'revolute');
-    if idx==1 || idx==2
+    if idx==1 || idx==2 || idx==3
         rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'prismatic');
-        if idx==1 
+        if idx==1
+            rightJnt(idx).JointAxis = [0 0 1];
+        elseif idx==2
             rightJnt(idx).JointAxis = [0 -1 0];
         else
            rightJnt(idx).JointAxis = [1 0 0];
@@ -574,6 +590,7 @@ end
 % Left Leg
 dhparams = [0      0         0      0;
             0      0         0      0;
+            0      0         0      0;
            -L1     0        -L2     0;    % Only difference with right leg is the
             0     -pi/2      0      0;    % first element is -L1 instead of L1
             0     -pi/2      0      0; 
@@ -585,9 +602,11 @@ dhparams = [0      0         0      0;
 for idx = 1:size(dhparams,1)
     leftLeg(idx) = rigidBody("leftleg"+idx); 
     leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'revolute');
-    if idx==1 || idx==2
+    if idx==1 || idx==2 || idx==3
         leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'prismatic');
-        if idx==1 
+        if idx==1
+            leftJnt(idx).JointAxis = [0 0 1];
+        elseif idx==2
             leftJnt(idx).JointAxis = [0 -1 0];
         else
             leftJnt(idx).JointAxis = [1 0 0];
@@ -607,7 +626,8 @@ hFig = figure;
 % hFig.Visible = 'on'; 
 hFig.Units = 'Normalized'; 
 hFig.OuterPosition = [0 0 1 1];
-hAx2 = axes(hFig);
+% hFig.Position = [0.13 0.13 400 400];
+% hAx2 = axes(hFig);
 mcolors = get(gca, 'colororder'); 
 
 desconfig = robot.homeConfiguration;
@@ -617,37 +637,39 @@ qright0 = zeros(1,6);
 qleft0 = zeros(1,6);
 updateJoints(robot, qright0, qleft0, stateC)
 hold on
-hLeftRel = plot3(-stateL(1),-stateL(2),stateL(3)-z_robot,'Color',mcolors(1,:),"LineWidth", 2.5); 
-hRightRel = plot3(-stateR(1),-stateR(2),stateR(3)-z_robot,'Color',mcolors(2,:),"LineWidth", 2.5);
-hCoMRel = plot3(stateCoM(1),-stateCoM(2),stateCoM(3)-z_robot,'Color',mcolors(3,:),"LineWidth", 2.5);
+hLeftRel = plot3(stateL(1),-stateL(2),stateL(3),'Color',mcolors(1,:),"LineWidth", 2); 
+hRightRel = plot3(stateR(1),-stateR(2),stateR(3),'Color',mcolors(2,:),"LineWidth", 2);
+hCoMRel = plot3(stateCoM(1),-stateCoM(2),stateCoM(3) + 0.2,'Color',mcolors(3,:),"LineWidth", 2.5);
 
 view(3)
-grid on
-axis([-z_robot z_robot -3*z_robot 0.3*z_robot  -1.1*z_robot 0.5*z_robot])
+grid off
+axis([-2.5*z_robot z_robot -3.5*z_robot 0.5*z_robot  -.1*z_robot 1.5*z_robot])
 
 end
 function updateJoints(robot, anglesright, anglesleft, stateC)
     desconfig = robot.homeConfiguration;
     
-    desconfig(1).JointPosition = stateC(2); % angle offset
-    desconfig(2).JointPosition = stateC(1);
+    desconfig(1).JointPosition = 0.68;
+    desconfig(2).JointPosition = stateC(2); % angle offset
+    desconfig(3).JointPosition = stateC(1);
     for idx = 1:length(anglesright)
-        desconfig(idx+3).JointPosition = anglesright(idx);
+        desconfig(idx+4).JointPosition = anglesright(idx);
     end 
-    desconfig(4).JointPosition = desconfig(4).JointPosition - pi;
-    desconfig(5).JointPosition = desconfig(5).JointPosition + pi/2; 
+    desconfig(5).JointPosition = desconfig(5).JointPosition - pi;
+    desconfig(6).JointPosition = desconfig(6).JointPosition + pi/2; 
     
-    desconfig(10).JointPosition = stateC(2);
-    desconfig(11).JointPosition = stateC(1);
+    desconfig(11).JointPosition = 0.68;
+    desconfig(12).JointPosition = stateC(2);
+    desconfig(13).JointPosition = stateC(1);
     for idx = 1:length(anglesleft)
-        desconfig(idx+12).JointPosition = anglesleft(idx);
+        desconfig(idx+14).JointPosition = anglesleft(idx);
     end 
-    desconfig(13).JointPosition = desconfig(13).JointPosition - pi; 
-    desconfig(14).JointPosition = desconfig(14).JointPosition + pi/2; 
+    desconfig(15).JointPosition = desconfig(15).JointPosition - pi; 
+    desconfig(16).JointPosition = desconfig(16).JointPosition + pi/2; 
        
     % update graphics 
     show(robot, desconfig, 'PreservePlot', false);
-    title('Walking Pattern Inverse Kinematics')
+%     title('Walking Pattern Inverse Kinematics')
     pause(0.001)
 end
 function appendLine(gHandle, points)
