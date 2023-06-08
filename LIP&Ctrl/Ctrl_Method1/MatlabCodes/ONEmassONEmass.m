@@ -1,6 +1,9 @@
 clear all; clc; close all;
-N = 6;
+N = 3;
 is_left = false;
+
+animateOn = true; 
+speedupfactor = 15; % animation speed up 
 
 Lp = 0.2;
 L_min0 = -0.5;
@@ -15,6 +18,7 @@ Vy = 0.0;
 m = 60;
 g = 9.8;
 swingHeight = 0.1;
+z_robot = 0.68;
 delta_z_vrp = 0.8;
 omega = sqrt(g/delta_z_vrp);
 
@@ -114,12 +118,26 @@ xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,
 
 x_com(1,:) = [xi_ini(1,1) xi_ini(1,2)];
 com_dot = [0, 0];
+stateR(:,s) = [-u0y; u0x; -0];
+stateL(:,s) = [ u0y; u0x; -0];
+stateCoM(:,s)=[x0_3Mass(2); x0_3Mass(1); z_robot];
+[robot, hLeftRel, hRightRel, hCoMRel] = createRobot(x0_3Mass, z_robot, stateL, stateR, stateCoM);
+animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);
+
 %% control loop
 while Step(i) == 1
 
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
+        if t<=0.1 & t>= 0.09
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.25],[x0_3Mass(1) x0_3Mass(1)],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)-0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+%             plot3([x0_3Mass(2) x0_3Mass(2)],[x0_3Mass(1) x0_3Mass(1)+0.25],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+%             plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+%             plot3([x0_3Mass(2) x0_3Mass(2)-0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+        end
         Fy = 170; % max 85  700
         Fx = 0; % max 170   -1250
     else
@@ -217,6 +235,8 @@ while Step(i) == 1
     CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
     CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
     
+    stateCoM(:,s) = [x0_3Mass(2);x0_3Mass(1);z_robot];
+
     xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
     ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,[time xi_meas_3Mass(1)]');
     ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,[time xi_meas_3Mass(2)]');
@@ -235,7 +255,7 @@ while Step(i) == 1
     % QP
     [qpresult, Opt_Vector] = controller_eng(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
           b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
-          zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
+          [0 0], [0 0], 0, 0); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
 
     T = (1/omega)*log(Opt_Vector(3));
     % update pattern parameter
@@ -248,7 +268,19 @@ while Step(i) == 1
         ini(ith+1:end) = ini_org(ith+1:end) + int32(inc(s)*ones(1,N+3-ith));
         fnl(ith:end) = fnl_org(ith:end) + int32(inc(s)*ones(1,N+4-ith));
     end
-    
+    if is_left
+        r_f_l = [1 1 0].*r_vrp;
+        r_f_r = [1 1 0].*r_vrp;
+        r_f_l(1,:) = [0 (Lp/2 + Wnom) 0];
+        r_f_l(3:2:N+3,:)=r_f_l(2:2:N+2,:);
+        r_f_r(2:2:N+3,:)=r_f_r(1:2:N+2,:);
+    else
+        r_f_r = [1 1 0].*r_vrp;
+        r_f_l = [1 1 0].*r_vrp;
+        r_f_r(1,:) = [0 -(Lp/2 + Wnom) 0];
+        r_f_r(3:2:N+3,:)=r_f_r(2:2:N+2,:);
+        r_f_l(2:2:N+3,:)=r_f_l(1:2:N+2,:);
+    end  
     % Swg leg new destination
     uT_x = [t + sum(Ts) Opt_Vector(1)]';
     uT_y = [t + sum(Ts) Opt_Vector(2)]';
@@ -284,6 +316,8 @@ while Step(i) == 1
         q = 0;
         ini_org = ini;
         fnl_org = fnl;
+        rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+        rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
     end
     
     if n == N+2 % N
@@ -297,10 +331,74 @@ while Step(i) == 1
     U0_x = horzcat(U0_x, u0_x);
     U0_y = horzcat(U0_y, u0_y);
     
+    for ith = n+1:n+2 % calculate zmp_pend for current step and next step
+        init_time = double(ini(ith))*t_sample;
+        final_time = double(fnl(ith))*t_sample;
+        if is_left
+            if mod(ith,2) ~= 0
+                swingfootpos0 = r_f_l(ith, :);
+                swingfootpos1 = r_f_l(ith+1, :);
+            else
+                swingfootpos0 = r_f_r(ith, :);
+                swingfootpos1 = r_f_r(ith+1, :);
+            end
+        else
+            if mod(ith,2) ~= 0
+                swingfootpos0 = r_f_r(ith, :);
+                swingfootpos1 = r_f_r(ith+1, :);
+            else
+                swingfootpos0 = r_f_l(ith, :);
+                swingfootpos1 = r_f_l(ith+1, :);
+            end
+        end
+
+        [qswing, dqswing, ddqswing] = getSwingFootTraj(swingfootpos0', swingfootpos1', swingHeight, ...
+                            init_time, final_time,t_sample);   
+
+        swg_traj(ini(ith):fnl(ith),:) = [qswing' dqswing' ddqswing'];
+    end
+    
+    if (is_left==false)
+        if mod(n,2)==0
+            stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+            stateL(:,s) = [u0y; u0x; -0];
+        else
+            stateR(:,s) = [u0y; u0x; -0];
+            stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+        end        
+    else
+        if mod(n,2)==0
+            stateR(:,s) = [u0y; u0x; -0];
+            stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+        else
+            stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+            stateL(:,s) = [u0y; u0x; -0];
+        end
+    end
+    animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);    
 
 end
 %% plot result
-figure(1)
+r = 0.07;
+hold on
+[x,y,z] = sphere(50);
+x0 = stateCoM(1,end); y0 = stateCoM(2,end); z0 = z_robot+0.2;
+x = x*r + x0;
+y = y*r + y0;
+z = z*r + z0;
+surface(x,y,z,'FaceColor', 'r','EdgeColor','none')
+plot3([x0 x0],[y0 y0],[z0 z_robot],'LineWidth',1,'Color','b');
+%%
+rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+plot3(PcZMP_Y,PcZMP_X,zeros(1,length(PcZMP_X)),'color','g', 'linewidth',2.5)
+%%
+xlabel('Y(m)');
+ylabel('X(m)');
+zlabel('Z(m)');
+hold off
+
+figure(2)
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
 plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
 plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
@@ -313,7 +411,7 @@ xlabel('time(s)');
 ylabel('position_{x} (m)');
 grid on
 
-figure(2)
+figure(3)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
 plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
 plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
@@ -326,7 +424,7 @@ xlabel('time(s)');
 ylabel('position_{y} (m)');
 grid on
 
-figure(3)
+figure(4)
 plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 plot(ZETA_mea_x(1,:),PcZMP_XX,'color','r','linewidth',2);
 plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
@@ -337,7 +435,7 @@ ylabel('distance_{x} (m)');
 %ylim([-0.09 0.09])
 grid on
 
-figure(4)
+figure(5)
 plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 plot(ZETA_mea_y(1,:),PcZMP_YY,'color','r','linewidth',2);
 plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
@@ -348,7 +446,7 @@ ylabel('distance_{y} (m)');
 %ylim([-0.05 0.05])
 grid on
 
-figure(5)
+figure(6)
 plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
 plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 legend('T_{new}','t_{curr}')
@@ -375,4 +473,178 @@ omega = 3.5;
 m = 60;
 d = -F/m;
 dvdt = omega^2*(x-u) + d;
+end
+function animate(stateR, stateL, stateCoM, animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, idx, z_robot)
+
+n = [0;  0; -1]; % x
+s = [-1; 0; 0];  % y
+a = [0;  1; 0];  % z
+R = [n s a];   
+
+% Get Left joints
+p = stateR-stateCoM.*[1; 1; 1];
+transmatL =  [R     p; 
+            [0 0 0 1]];
+isLeft = true; 
+qLeft = invKinBody2Foot(transmatL, isLeft); % Call IK function
+
+% Get Right joints
+p = stateL-stateCoM.*[1; 1; 1]; 
+transmatR =  [R     p; 
+            [0 0 0 1]];
+isLeft = false; 
+qRight = invKinBody2Foot(transmatR, isLeft);
+appendLine(hLeftRel, stateL); 
+appendLine(hRightRel, stateR);
+appendLine(hCoMRel, stateCoM-[0;0;-0.2]);
+% updateLine(hLeftPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateL([1,3,5],sidx)]); 
+% updateLine(hRightPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateR([1,3,5],sidx)]); 
+
+
+% Animate
+if animateOn
+    if rem(idx,speedupfactor) == 0
+        updateJoints(robot, qRight, qLeft, stateCoM);
+    end 
+end  
+end
+function [robot, hLeftRel, hRightRel, hCoMRel] = createRobot(stateC, z_robot, stateL, stateR, stateCoM)
+
+% NOTE: make sure parameters match in inverse kinematics function 
+L1 = 0.12; 
+L2 = 0; 
+L3 = 0.4;
+L4 = 0.38;
+L5 = 0;
+       
+robot = rigidBodyTree;
+% Right Leg
+dhparams = [0       0        0      0;
+            0       0        0      0;     % Base -> pelvisy
+            0       0        0      0;     % pelvisy -> pelvisx
+            L1      0       -L2     0;     % pelvisx -> hip yaw
+            0      -pi/2     0      0;     % Hip yaw -> hip roll
+            0      +pi/2     0      0;     % Hip roll -> hip pitch       
+            L3      0        0      0;     % Hip pitch -> knee pitch
+            L4      0        0      0;     % Knee pitch -> ankle pitch
+            0       pi/2     0      0;     % Ankle pitch -> ankle roll
+            L5      0        0      0];    % Ankle roll -> end effector (foot)
+       
+for idx = 1:size(dhparams,1)
+    rightLeg(idx) = rigidBody("rightleg"+idx);
+    rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'revolute');
+    if idx==1 || idx==2 || idx==3
+        rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'prismatic');
+        if idx==1
+            rightJnt(idx).JointAxis = [0 0 1];
+        elseif idx==2
+            rightJnt(idx).JointAxis = [0 -1 0];
+        else
+           rightJnt(idx).JointAxis = [1 0 0];
+        end
+    end
+    setFixedTransform(rightJnt(idx),dhparams(idx,:),'dh'); 
+    rightLeg(idx).Joint = rightJnt(idx);
+    if idx==1
+        addBody(robot,rightLeg(idx),"base");     
+    else
+        addBody(robot,rightLeg(idx),"rightleg"+(idx-1));
+    end
+    
+end
+
+% Left Leg
+dhparams = [0      0         0      0;
+            0      0         0      0;
+            0      0         0      0;
+           -L1     0        -L2     0;    % Only difference with right leg is the
+            0     -pi/2      0      0;    % first element is -L1 instead of L1
+            0     +pi/2      0      0; 
+            L3      0        0      0;
+            L4      0        0      0;
+            0       pi/2     0      0;
+            L5      0        0      0];
+        
+for idx = 1:size(dhparams,1)
+    leftLeg(idx) = rigidBody("leftleg"+idx); 
+    leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'revolute');
+    if idx==1 || idx==2 || idx==3
+        leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'prismatic');
+        if idx==1
+            leftJnt(idx).JointAxis = [0 0 1];
+        elseif idx==2
+            leftJnt(idx).JointAxis = [0 -1 0];
+        else
+            leftJnt(idx).JointAxis = [1 0 0];
+        end
+    end
+    setFixedTransform(leftJnt(idx),dhparams(idx,:),'dh'); 
+    leftLeg(idx).Joint = leftJnt(idx);
+    if idx==1
+        addBody(robot,leftLeg(idx),"base");     
+    else
+        addBody(robot,leftLeg(idx),"leftleg"+(idx-1));
+    end
+end
+
+% showdetails(robot)
+hFig = figure; 
+% hFig.Visible = 'on'; 
+hFig.Units = 'Normalized'; 
+hFig.OuterPosition = [0 0 1 1];
+% hFig.Position = [0.13 0.13 400 400];
+hAx2 = axes(hFig);
+mcolors = get(gca, 'colororder'); 
+
+desconfig = robot.homeConfiguration;
+
+
+qright0 = zeros(1,6); 
+qleft0 = zeros(1,6);
+updateJoints(robot, qright0, qleft0, stateC)
+hold on
+hLeftRel = plot3(stateL(1),stateL(2),stateL(3),'Color',mcolors(1,:),"LineWidth", 2); 
+hRightRel = plot3(stateR(1),stateR(2),stateR(3),'Color',mcolors(2,:),"LineWidth", 2);
+hCoMRel = plot3(stateCoM(1),stateCoM(2),stateCoM(3) + 0.2,'Color',mcolors(3,:),"LineWidth", 2.5);
+
+view(3)
+grid off
+axis([-0.9*z_robot 0.5*z_robot -0.5*z_robot 2*z_robot  -.1*z_robot 1.5*z_robot])
+
+end
+function updateJoints(robot, anglesright, anglesleft, stateC)
+    desconfig = robot.homeConfiguration;
+    
+    desconfig(1).JointPosition = 0.68;
+    desconfig(2).JointPosition = -stateC(2); % angle offset
+    desconfig(3).JointPosition = stateC(1);
+    for idx = 1:length(anglesright)
+        desconfig(idx+4).JointPosition = anglesright(idx);
+    end 
+    desconfig(5).JointPosition = desconfig(5).JointPosition - pi;
+    desconfig(6).JointPosition = desconfig(6).JointPosition + pi/2; 
+    
+    desconfig(11).JointPosition = 0.68;
+    desconfig(12).JointPosition = -stateC(2);
+    desconfig(13).JointPosition = stateC(1);
+    for idx = 1:length(anglesleft)
+        desconfig(idx+14).JointPosition = anglesleft(idx);
+    end 
+    desconfig(15).JointPosition = desconfig(15).JointPosition - pi; 
+    desconfig(16).JointPosition = desconfig(16).JointPosition + pi/2; 
+       
+    % update graphics 
+    show(robot, desconfig, 'PreservePlot', false);
+%     title('Walking Pattern Inverse Kinematics')
+    pause(0.001)
+end
+function appendLine(gHandle, points)
+    gHandle.XData(end+1) = points(1); 
+    gHandle.YData(end+1) = points(2); 
+    gHandle.ZData(end+1) = points(3); 
+end
+function updateLine(gHandle, points)
+    gHandle.XData = points(1,:); 
+    gHandle.YData = points(2,:); 
+    gHandle.ZData = points(3,:); 
 end
