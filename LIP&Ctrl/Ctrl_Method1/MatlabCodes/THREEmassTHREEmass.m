@@ -22,6 +22,7 @@ mfeet = 6;
 m = 60;
 g = 9.8;
 swingHeight = 0.1;
+z_robot = 0.68;
 delta_z_vrp = 0.8;
 omega = sqrt(g/delta_z_vrp);
 
@@ -123,12 +124,23 @@ xi_Y = r_vrp(n+1,2) + exp(omega*(t-T))*(r_vrp(n+2,2) + b_nom(n+1,2) - r_vrp(n+1,
 
 x_com(1,:) = [xi_ini(1,1) xi_ini(1,2)];
 com_dot = [0, 0];
+stateR(:,s) = [-u0y; u0x; -0];
+stateL(:,s) = [ u0y; u0x; -0];
+stateCoM(:,s)=[x0_3Mass(2); x0_3Mass(1); z_robot];
+[robot, hLeftRel, hRightRel, hCoMRel] = createRobot(x0_3Mass, z_robot, stateL, stateR, stateCoM);
+animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);
+
 %% control loop
 while Step(i) == 1
     s = s + 1;
 [xi_meas_3Mass(2); xi_Y]
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
+        if t<=0.1 & t>= 0.09
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.25],[x0_3Mass(1) x0_3Mass(1)],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)-0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+        end
         Fy = 360; % max 380 @ 0.1s
         Fx = 0;
     else
@@ -218,6 +230,8 @@ while Step(i) == 1
     CoMx_3Mass = horzcat(CoMx_3Mass,CoM_x_3Mass);
     CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
     
+    stateCoM(:,s) = [x0_3Mass(2);x0_3Mass(1);z_robot];
+
     % measured DCM pattern
     xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
     zeta_mea_x = [t + sum(Ts) xi_meas_3Mass(1)]'; %simoutx(q,2) xi_meas_3Mass(1)
@@ -360,9 +374,60 @@ while Step(i) == 1
 
     end
     ZMP_PEND = horzcat(ZMP_PEND, [t + sum(Ts); zmp_pend(ini(n+1)-1+q,1:2)']);
+    if (is_left==false)
+        if mod(n,2)==0
+            stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+            stateL(:,s) = [u0y; u0x; -0];
+        else
+            stateR(:,s) = [u0y; u0x; -0];
+            stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+        end        
+    else
+        if mod(n,2)==0
+            stateR(:,s) = [u0y; u0x; -0];
+            stateL(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+        else
+            stateR(:,s) = [swg_traj(ini(n+1)-1+q,2); swg_traj(ini(n+1)-1+q,1); swg_traj(ini(n+1)-1+q,3)];
+            stateL(:,s) = [u0y; u0x; -0];
+        end
+    end
+    animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);    
+
 end
 %% plot result
-figure(1)
+r = 0.07;
+hold on
+[x,y,z] = sphere(50);
+x0 = stateCoM(1,end); y0 = stateCoM(2,end); z0 = z_robot+0.2;
+x = x*r + x0;
+y = y*r + y0;
+z = z*r + z0;
+surface(x,y,z,'FaceColor', 'b','EdgeColor','none')
+plot3([x0 x0],[y0 y0],[z0 z_robot],'LineWidth',1,'Color','b');
+%%
+r = 0.05;
+hold on
+[x,y,z] = sphere(50);
+x0 = stateL(1,end); y0 = stateL(2,end); z0 = stateL(3,end);
+x = x*r + x0;
+y = y*r + y0;
+z = z*r + z0;
+surface(x,y,z,'FaceColor', 'b','EdgeColor','none')
+%%
+r = 0.05;
+hold on
+[x,y,z] = sphere(50);
+x0 = stateR(1,end); y0 = stateR(2,end); z0 = stateR(3,end);
+x = x*r + x0;
+y = y*r + y0;
+z = z*r + z0;
+surface(x,y,z,'FaceColor', 'b','EdgeColor','none')
+%%
+xlabel('Y(m)');
+ylabel('X(m)');
+zlabel('Z(m)');
+hold off
+figure(2)
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
 plot(ZETA_mea_x_3Mass(1,:),ZETA_mea_x_3Mass(2,:),'color','k','linewidth',2);hold on;
 plot(CoMx_3Mass(1,:),x_com(2:end,1),'color','g','LineStyle','--','linewidth',1.5);hold on;
@@ -377,7 +442,7 @@ ylabel('position_{x} (m)');
 grid on
 
 %%
-figure(2)
+figure(3)
 plot(XI_ref_Y(1,:),XI_ref_Y(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
 plot(ZETA_mea_y_3Mass(1,:),ZETA_mea_y_3Mass(2,:),'color','k','linewidth',2);hold on;
 plot(CoMy_3Mass(1,:),x_com(2:end,2),'color','g','LineStyle','--','linewidth',1.5);hold on;
@@ -391,7 +456,7 @@ xlabel('time(s)');
 ylabel('position_{y} (m)');
 grid on
 
-figure(3)
+figure(4)
 plot(ZETA_err_x(1,:),ZETA_err_x(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 plot(ZETA_mea_x_3Mass(1,:),PcZMP_XX,'color','r','linewidth',2);
 plot(UT_xEr(1,:),UT_xEr(2,:),'color','b','linewidth',2);hold on;
@@ -402,7 +467,7 @@ ylabel('distance_{x} (m)');
 %ylim([-0.09 0.09])
 grid on
 
-figure(4)
+figure(5)
 plot(ZETA_err_y(1,:),ZETA_err_y(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 plot(ZETA_mea_y_3Mass(1,:),PcZMP_YY,'color','r','linewidth',2);
 plot(UT_yEr(1,:),UT_yEr(2,:),'color','b','linewidth',2);hold on;
@@ -413,7 +478,7 @@ ylabel('distance_{y} (m)');
 %ylim([-0.05 0.05])
 grid on
 
-figure(5)
+figure(6)
 plot(T_step(1,:),T_step(2,:),'color','r','linewidth',2);hold on;
 plot(t_var(1,:),t_var(2,:),'color','k','LineStyle','--','linewidth',2);hold on;
 legend('T_{new}','t_{curr}')
@@ -561,7 +626,7 @@ hFig = figure;
 hFig.Units = 'Normalized'; 
 hFig.OuterPosition = [0 0 1 1];
 % hFig.Position = [0.13 0.13 400 400];
-% hAx2 = axes(hFig);
+hAx2 = axes(hFig);
 mcolors = get(gca, 'colororder'); 
 
 desconfig = robot.homeConfiguration;
@@ -577,7 +642,7 @@ hCoMRel = plot3(stateCoM(1),stateCoM(2),stateCoM(3) + 0.2,'Color',mcolors(3,:),"
 
 view(3)
 grid off
-axis([-2.5*z_robot z_robot -0.5*z_robot 3.5*z_robot  -.1*z_robot 1.5*z_robot])
+axis([-2*z_robot 0.5*z_robot -0.5*z_robot 6*z_robot  -.1*z_robot 1.5*z_robot])
 
 end
 function updateJoints(robot, anglesright, anglesleft, stateC)
