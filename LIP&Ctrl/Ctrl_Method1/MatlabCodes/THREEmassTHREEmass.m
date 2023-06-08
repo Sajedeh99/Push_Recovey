@@ -2,6 +2,9 @@ clear all; clc; close all;
 N = 10;
 is_left = false;
 
+animateOn = true; 
+speedupfactor = 15; % animation speed up 
+
 Lp = 0.2; 
 L_min0 = -0.5;
 W_min0 = 0.1; 
@@ -430,14 +433,186 @@ for i = N+1:-1:1
 end
 xi_ini(1,:) = r_vrp(i,:) + (exp(-omega*Tnom))*(xi_eos(i,:)-r_vrp(i,:));
 end
-
 function dxdt = f1(t,x,v)
 dxdt = v;
 end
-
 function dvdt = f2(t,x,v,u,F)
 omega = 3.5;
 m = 60;
 d = -F/m;
 dvdt = omega^2*(x-u) + d;
+end
+function animate(stateR, stateL, stateCoM, animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, idx, z_robot)
+
+n = [0;  0; -1]; % x
+s = [-1; 0; 0];  % y
+a = [0;  1; 0];  % z
+R = [n s a];   
+
+% Get Left joints
+p = stateR-stateCoM.*[1; 1; 1];
+transmatL =  [R     p; 
+            [0 0 0 1]];
+isLeft = true; 
+qLeft = invKinBody2Foot(transmatL, isLeft); % Call IK function
+
+% Get Right joints
+p = stateL-stateCoM.*[1; 1; 1]; 
+transmatR =  [R     p; 
+            [0 0 0 1]];
+isLeft = false; 
+qRight = invKinBody2Foot(transmatR, isLeft);
+appendLine(hLeftRel, stateL); 
+appendLine(hRightRel, stateR);
+appendLine(hCoMRel, stateCoM-[0;0;-0.2]);
+% updateLine(hLeftPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateL([1,3,5],sidx)]); 
+% updateLine(hRightPoint, [stepinfos{footidx}.state([1,3,5],sidx) stateR([1,3,5],sidx)]); 
+
+
+% Animate
+if animateOn
+    if rem(idx,speedupfactor) == 0
+        updateJoints(robot, qRight, qLeft, stateCoM);
+    end 
+end  
+end
+function [robot, hLeftRel, hRightRel, hCoMRel] = createRobot(stateC, z_robot, stateL, stateR, stateCoM)
+
+% NOTE: make sure parameters match in inverse kinematics function 
+L1 = 0.12; 
+L2 = 0; 
+L3 = 0.4;
+L4 = 0.38;
+L5 = 0;
+       
+robot = rigidBodyTree;
+% Right Leg
+dhparams = [0       0        0      0;
+            0       0        0      0;     % Base -> pelvisy
+            0       0        0      0;     % pelvisy -> pelvisx
+            L1      0       -L2     0;     % pelvisx -> hip yaw
+            0      -pi/2     0      0;     % Hip yaw -> hip roll
+            0      +pi/2     0      0;     % Hip roll -> hip pitch       
+            L3      0        0      0;     % Hip pitch -> knee pitch
+            L4      0        0      0;     % Knee pitch -> ankle pitch
+            0       pi/2     0      0;     % Ankle pitch -> ankle roll
+            L5      0        0      0];    % Ankle roll -> end effector (foot)
+       
+for idx = 1:size(dhparams,1)
+    rightLeg(idx) = rigidBody("rightleg"+idx);
+    rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'revolute');
+    if idx==1 || idx==2 || idx==3
+        rightJnt(idx) = rigidBodyJoint("rightjnt"+idx, 'prismatic');
+        if idx==1
+            rightJnt(idx).JointAxis = [0 0 1];
+        elseif idx==2
+            rightJnt(idx).JointAxis = [0 -1 0];
+        else
+           rightJnt(idx).JointAxis = [1 0 0];
+        end
+    end
+    setFixedTransform(rightJnt(idx),dhparams(idx,:),'dh'); 
+    rightLeg(idx).Joint = rightJnt(idx);
+    if idx==1
+        addBody(robot,rightLeg(idx),"base");     
+    else
+        addBody(robot,rightLeg(idx),"rightleg"+(idx-1));
+    end
+    
+end
+
+% Left Leg
+dhparams = [0      0         0      0;
+            0      0         0      0;
+            0      0         0      0;
+           -L1     0        -L2     0;    % Only difference with right leg is the
+            0     -pi/2      0      0;    % first element is -L1 instead of L1
+            0     +pi/2      0      0; 
+            L3      0        0      0;
+            L4      0        0      0;
+            0       pi/2     0      0;
+            L5      0        0      0];
+        
+for idx = 1:size(dhparams,1)
+    leftLeg(idx) = rigidBody("leftleg"+idx); 
+    leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'revolute');
+    if idx==1 || idx==2 || idx==3
+        leftJnt(idx) = rigidBodyJoint("leftjnt"+idx, 'prismatic');
+        if idx==1
+            leftJnt(idx).JointAxis = [0 0 1];
+        elseif idx==2
+            leftJnt(idx).JointAxis = [0 -1 0];
+        else
+            leftJnt(idx).JointAxis = [1 0 0];
+        end
+    end
+    setFixedTransform(leftJnt(idx),dhparams(idx,:),'dh'); 
+    leftLeg(idx).Joint = leftJnt(idx);
+    if idx==1
+        addBody(robot,leftLeg(idx),"base");     
+    else
+        addBody(robot,leftLeg(idx),"leftleg"+(idx-1));
+    end
+end
+
+% showdetails(robot)
+hFig = figure; 
+% hFig.Visible = 'on'; 
+hFig.Units = 'Normalized'; 
+hFig.OuterPosition = [0 0 1 1];
+% hFig.Position = [0.13 0.13 400 400];
+% hAx2 = axes(hFig);
+mcolors = get(gca, 'colororder'); 
+
+desconfig = robot.homeConfiguration;
+
+
+qright0 = zeros(1,6); 
+qleft0 = zeros(1,6);
+updateJoints(robot, qright0, qleft0, stateC)
+hold on
+hLeftRel = plot3(stateL(1),stateL(2),stateL(3),'Color',mcolors(1,:),"LineWidth", 2); 
+hRightRel = plot3(stateR(1),stateR(2),stateR(3),'Color',mcolors(2,:),"LineWidth", 2);
+hCoMRel = plot3(stateCoM(1),stateCoM(2),stateCoM(3) + 0.2,'Color',mcolors(3,:),"LineWidth", 2.5);
+
+view(3)
+grid off
+axis([-2.5*z_robot z_robot -0.5*z_robot 3.5*z_robot  -.1*z_robot 1.5*z_robot])
+
+end
+function updateJoints(robot, anglesright, anglesleft, stateC)
+    desconfig = robot.homeConfiguration;
+    
+    desconfig(1).JointPosition = 0.68;
+    desconfig(2).JointPosition = -stateC(2); % angle offset
+    desconfig(3).JointPosition = stateC(1);
+    for idx = 1:length(anglesright)
+        desconfig(idx+4).JointPosition = anglesright(idx);
+    end 
+    desconfig(5).JointPosition = desconfig(5).JointPosition - pi;
+    desconfig(6).JointPosition = desconfig(6).JointPosition + pi/2; 
+    
+    desconfig(11).JointPosition = 0.68;
+    desconfig(12).JointPosition = -stateC(2);
+    desconfig(13).JointPosition = stateC(1);
+    for idx = 1:length(anglesleft)
+        desconfig(idx+14).JointPosition = anglesleft(idx);
+    end 
+    desconfig(15).JointPosition = desconfig(15).JointPosition - pi; 
+    desconfig(16).JointPosition = desconfig(16).JointPosition + pi/2; 
+       
+    % update graphics 
+    show(robot, desconfig, 'PreservePlot', false);
+%     title('Walking Pattern Inverse Kinematics')
+    pause(0.001)
+end
+function appendLine(gHandle, points)
+    gHandle.XData(end+1) = points(1); 
+    gHandle.YData(end+1) = points(2); 
+    gHandle.ZData(end+1) = points(3); 
+end
+function updateLine(gHandle, points)
+    gHandle.XData = points(1,:); 
+    gHandle.YData = points(2,:); 
+    gHandle.ZData = points(3,:); 
 end
