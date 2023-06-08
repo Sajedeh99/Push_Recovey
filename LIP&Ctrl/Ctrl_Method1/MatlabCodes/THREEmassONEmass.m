@@ -12,7 +12,7 @@ L_max0 = 0.5;
 W_max0 = 0.4;
 T_min = 0.3;
 T_max = 1;
-Vx = 0.8;
+Vx = 0.5;
 Vy = 0.0;
 
 msup = 3;
@@ -142,6 +142,11 @@ while Step(i) == 1
     s = s + 1;
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
+        if t<=0.1 & t>= 0.09
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.25],[x0_3Mass(1) x0_3Mass(1)],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)-0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+        end
         Fy = 360; % max 350N @ 0.1
         Fx = 0;
     else
@@ -252,7 +257,7 @@ while Step(i) == 1
     CoMy_3Mass = horzcat(CoMy_3Mass,CoM_y_3Mass);
     
     stateCoM(:,s) = [x0_3Mass(2);x0_3Mass(1);z_robot];
-    
+        
     xi_meas_3Mass = x0_3Mass + V0_3Mass/omega;
     ZETA_mea_x_3Mass = horzcat(ZETA_mea_x_3Mass,[time xi_meas_3Mass(1)]');
     ZETA_mea_y_3Mass = horzcat(ZETA_mea_y_3Mass,[time xi_meas_3Mass(2)]');
@@ -534,14 +539,14 @@ a = [0;  1; 0];  % z
 R = [n s a];   
 
 % Get Left joints
-p = stateR.*[1; 1; 1]-stateCoM.*[1; 1; 1];
+p = stateR-stateCoM.*[1; 1; 1];
 transmatL =  [R     p; 
             [0 0 0 1]];
 isLeft = true; 
 qLeft = invKinBody2Foot(transmatL, isLeft); % Call IK function
 
 % Get Right joints
-p = stateL.*[1; 1; 1]-stateCoM.*[1; 1; 1]; 
+p = stateL-stateCoM.*[1; 1; 1]; 
 transmatR =  [R     p; 
             [0 0 0 1]];
 isLeft = false; 
@@ -645,7 +650,7 @@ hFig = figure;
 hFig.Units = 'Normalized'; 
 hFig.OuterPosition = [0 0 1 1];
 % hFig.Position = [0.13 0.13 400 400];
-% hAx2 = axes(hFig);
+hAx2 = axes(hFig);
 mcolors = get(gca, 'colororder'); 
 
 desconfig = robot.homeConfiguration;
@@ -661,7 +666,7 @@ hCoMRel = plot3(stateCoM(1),stateCoM(2),stateCoM(3) + 0.2,'Color',mcolors(3,:),"
 
 view(3)
 grid off
-axis([-2.5*z_robot z_robot -0.5*z_robot 5*z_robot  -.1*z_robot 1.5*z_robot])
+axis([-2*z_robot 0.5*z_robot -0.5*z_robot 5*z_robot  -.1*z_robot 1.5*z_robot])
 
 end
 function updateJoints(robot, anglesright, anglesleft, stateC)
