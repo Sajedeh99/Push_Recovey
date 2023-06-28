@@ -121,8 +121,8 @@ com_dot = [0, 0];
 stateR(:,s) = [-u0y; u0x; -0];
 stateL(:,s) = [ u0y; u0x; -0];
 stateCoM(:,s)=[x0_3Mass(2); x0_3Mass(1); z_robot];
-[robot, hLeftRel, hRightRel, hCoMRel] = createRobot(x0_3Mass, z_robot, stateL, stateR, stateCoM);
-animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);
+% [robot, hLeftRel, hRightRel, hCoMRel] = createRobot(x0_3Mass, z_robot, stateL, stateR, stateCoM);
+% animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);
 
 %% control loop
 while Step(i) == 1
@@ -131,9 +131,9 @@ while Step(i) == 1
     % Disturbance insertation
     if n+1 == 3 && t <= 0.1
         if t<=0.1 & t>= 0.09
-            plot3([x0_3Mass(2) x0_3Mass(2)+0.25],[x0_3Mass(1) x0_3Mass(1)],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
-            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
-            plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)-0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+%             plot3([x0_3Mass(2) x0_3Mass(2)+0.25],[x0_3Mass(1) x0_3Mass(1)],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+%             plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+%             plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)-0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
 %             plot3([x0_3Mass(2) x0_3Mass(2)],[x0_3Mass(1) x0_3Mass(1)+0.25],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
 %             plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
 %             plot3([x0_3Mass(2) x0_3Mass(2)-0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
@@ -375,28 +375,28 @@ while Step(i) == 1
             stateL(:,s) = [u0y; u0x; -0];
         end
     end
-    animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);    
+%     animate(stateR(:,s), stateL(:,s), stateCoM(:,s), animateOn, robot, hLeftRel, hRightRel, hCoMRel, speedupfactor, s, z_robot);    
 
 end
 %% plot result
-r = 0.07;
-hold on
-[x,y,z] = sphere(50);
-x0 = stateCoM(1,end); y0 = stateCoM(2,end); z0 = z_robot+0.2;
-x = x*r + x0;
-y = y*r + y0;
-z = z*r + z0;
-surface(x,y,z,'FaceColor', 'r','EdgeColor','none')
-plot3([x0 x0],[y0 y0],[z0 z_robot],'LineWidth',1,'Color','b');
-%%
-rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
-rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
-plot3(PcZMP_Y,PcZMP_X,zeros(1,length(PcZMP_X)),'color','g', 'linewidth',2.5)
-%%
-xlabel('Y(m)');
-ylabel('X(m)');
-zlabel('Z(m)');
-hold off
+% r = 0.07;
+% hold on
+% [x,y,z] = sphere(50);
+% x0 = stateCoM(1,end); y0 = stateCoM(2,end); z0 = z_robot+0.2;
+% x = x*r + x0;
+% y = y*r + y0;
+% z = z*r + z0;
+% surface(x,y,z,'FaceColor', 'r','EdgeColor','none')
+% plot3([x0 x0],[y0 y0],[z0 z_robot],'LineWidth',1,'Color','b');
+% %%
+% rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+% rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+% plot3(PcZMP_Y,PcZMP_X,zeros(1,length(PcZMP_X)),'color','g', 'linewidth',2.5)
+% %%
+% xlabel('Y(m)');
+% ylabel('X(m)');
+% zlabel('Z(m)');
+% hold off
 
 figure(2)
 plot(XI_ref_X(1,:),XI_ref_X(2,:),'color','k','LineStyle','--','linewidth',1.5);hold on;
