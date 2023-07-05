@@ -131,7 +131,10 @@ while Step(i) == 1
     % Disturbance insertation
     if n+1 == 2 && t <= 0.1
         if t<=0.1 & t>= 0.09
-      
+            plot3([x0_3Mass(2) x0_3Mass(2)-0.08],[x0_3Mass(1) x0_3Mass(1)],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)-0.02],[x0_3Mass(1) x0_3Mass(1)+0.02],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            plot3([x0_3Mass(2) x0_3Mass(2)-0.02],[x0_3Mass(1) x0_3Mass(1)-0.02],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
+            
 %             plot3([x0_3Mass(2) x0_3Mass(2)],[x0_3Mass(1) x0_3Mass(1)+0.25],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
 %             plot3([x0_3Mass(2) x0_3Mass(2)+0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
 %             plot3([x0_3Mass(2) x0_3Mass(2)-0.05],[x0_3Mass(1) x0_3Mass(1)+0.05],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color','m');
@@ -173,8 +176,8 @@ while Step(i) == 1
     ZETA_err_x = horzcat(ZETA_err_x,zeta_err_x);
     ZETA_err_y = horzcat(ZETA_err_y,zeta_err_y); 
     
-    PcZMP_y(q,n+1) = 0; %-(exp(omega*(T-t+0.08)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.08)));
-    PcZMP_x(q,n+1) = 0; %-(exp(omega*(T-t+0.08)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.08)));
+    PcZMP_y(q,n+1) = -(exp(omega*(T-t+0.08)))*zeta_err_y(2)/(1-exp(omega*(T-t+0.08)));
+    PcZMP_x(q,n+1) = -(exp(omega*(T-t+0.08)))*zeta_err_x(2)/(1-exp(omega*(T-t+0.08)));
     
     if abs(PcZMP_y(q,n+1)) >= 0.04
        if  PcZMP_y(q,n+1) > 0
@@ -253,7 +256,7 @@ while Step(i) == 1
     % QP
     [qpresult, Opt_Vector] = controller_eng(t, T, Lnom, Wnom, L_min, L_max, W_min, W_max, T_min, T_max,...
           b_nom(n+1,1), b_nom(n+1,2), omega, zeta_mea_x, zeta_mea_y, r_vrp(n+2,1), r_vrp(n+2,2),...
-          [0 0], [0 0], 0, 0); % [0 0], [0 0] zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
+          [0 0], [0 0], 0, 0); %zeta_err_x, zeta_err_y, PcZMP_y(q,n+1), PcZMP_x(q,n+1)
 
     T = (1/omega)*log(Opt_Vector(3));
     % update pattern parameter
@@ -314,8 +317,8 @@ while Step(i) == 1
         q = 0;
         ini_org = ini;
         fnl_org = fnl;
-        rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.4660 0.6740 0.3880],'FaceColor',[0.4660 0.6740 0.1880])
-        rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.4660 0.6740 0.3880],'FaceColor',[0.4660 0.6740 0.1880])
+        rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+        rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
     end
     
     if n == N+2 % N
@@ -378,31 +381,30 @@ while Step(i) == 1
 
 end
 %% plot result
-% r = 0.07;
+r = 0.07;
 hold on
-% [x,y,z] = sphere(50);
-% x0 = stateCoM(1,end); y0 = stateCoM(2,end); z0 = z_robot+0.2;
-% x = x*r + x0;
-% y = y*r + y0;
-% z = z*r + z0;
-% surface(x,y,z,'FaceColor', 'r','EdgeColor','none')
-% plot3([x0 x0],[y0 y0],[z0 z_robot],'LineWidth',1,'Color','b');
-%%   
-rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.4660 0.6740 0.3880],'FaceColor',[0.4660 0.6740 0.1880])
-rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.4660 0.6740 0.3880],'FaceColor',[0.4660 0.6740 0.1880])
-rectangle('Position',[stateR(1,1)-0.04 stateR(2,1)-0.08 0.08 0.16],'EdgeColor',[0.4660 0.6740 0.3880],'FaceColor',[0.4660 0.6740 0.1880])
-
-plot3(U0_y(2,:),U0_x(2,:),zeros(1,length(U0_x)),'color','k','LineStyle','--','linewidth',1.5)
-plot3(PcZMP_Y,PcZMP_X,zeros(1,length(PcZMP_X)),'color','r', 'linewidth',2)
-plot3([CoMy_3Mass(2,651) CoMy_3Mass(2,651)-0.08],[CoMx_3Mass(2,651) CoMx_3Mass(2,651)],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color',[0.6350 0.0780 0.1840]);
-plot3([CoMy_3Mass(2,651) CoMy_3Mass(2,651)-0.02],[CoMx_3Mass(2,651) CoMx_3Mass(2,651)+0.02],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color',[0.6350 0.0780 0.1840]);
-plot3([CoMy_3Mass(2,651) CoMy_3Mass(2,651)-0.02],[CoMx_3Mass(2,651) CoMx_3Mass(2,651)-0.02],[z_robot+0.2 z_robot+0.2],'LineWidth',2.5,'Color',[0.6350 0.0780 0.1840]);
-legend('RF position','LF position','com','p_{t,ref}','p_{t,mod}+p_{t,ref}','push')
+[x,y,z] = sphere(50);
+x0 = stateCoM(1,end); y0 = stateCoM(2,end); z0 = z_robot+0.2;
+x = x*r + x0;
+y = y*r + y0;
+z = z*r + z0;
+surface(x,y,z,'FaceColor', 'r','EdgeColor','none')
+plot3([x0 x0],[y0 y0],[z0 z_robot],'LineWidth',1,'Color','b');
 %%
+rectangle('Position',[stateL(1,end)-0.04 stateL(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+rectangle('Position',[stateR(1,end)-0.04 stateR(2,end)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+rectangle('Position',[stateR(1,1)-0.04 stateR(2,1)-0.08 0.08 0.16],'EdgeColor',[0.6350 0.0780 0.1840],'LineWidth',2.5)
+
+plot3(PcZMP_Y,PcZMP_X,zeros(1,length(PcZMP_X)),'color','g','LineStyle','--', 'linewidth',2.5)
+plot3(U0_y(2,:),U0_x(2,:),zeros(1,length(U0_x)),'color','b', 'linewidth',2.5)
+legend('RF position','LF position','com_{meas}','push','p_{t,mod}+p_{t,ref}','p_{t,ref}')
+%%
+%  plot3([CoMy_3Mass(2,651) CoMy_3Mass(2,651)-0.02],[CoMx_3Mass(2,651) CoMx_3Mass(2,651)],[])                                                                                    
+% plot3([CoMy_3Mass(2,651) CoMy_3Mass(2,651)-0.02],[CoMx_3Mass(2,651) CoMx_3Mass(2                                                                                    
+% legend('RF position','LF position','com','p_{t,ref}','p_{t,mod}+p_{t,ref}','push  
 xlabel('Y(m)');
 ylabel('X(m)');
 zlabel('Z(m)');
-set(gca, 'DataAspectRatio',[1 2.5 1])
 hold off
 
 figure(2)
@@ -607,7 +609,7 @@ hFig.OuterPosition = [0 0 1 1];
 hAx2 = axes(hFig);
 mcolors = get(gca, 'colororder'); 
 
-% desconfig = robot.homeConfiguration;
+desconfig = robot.homeConfiguration;
 
 
 qright0 = zeros(1,6); 
@@ -620,7 +622,7 @@ hCoMRel = plot3(stateCoM(1),stateCoM(2),stateCoM(3) + 0.2,'Color',mcolors(3,:),"
 
 view(3)
 grid off
-axis([-0.3*z_robot 0.7*z_robot -0.5*z_robot 2.2*z_robot  -.1 1.5])
+axis([-0.9*z_robot 0.3*z_robot -0.5*z_robot 2.5*z_robot  -.1*z_robot 1.5*z_robot])
 
 end
 function updateJoints(robot, anglesright, anglesleft, stateC)
@@ -645,7 +647,7 @@ function updateJoints(robot, anglesright, anglesleft, stateC)
     desconfig(16).JointPosition = desconfig(16).JointPosition + pi/2; 
        
     % update graphics 
-%     show(robot, desconfig, 'PreservePlot', false);
+    show(robot, desconfig, 'PreservePlot', false);
 %     title('Walking Pattern Inverse Kinematics')
     pause(0.001)
 end
